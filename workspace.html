@@ -6,30 +6,46 @@
     <title>Unsub - Workspace</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 min-h-screen p-6">
-    <div class="max-w-4xl mx-auto">
-        <header class="flex justify-between items-center mb-8">
-            <h1 class="text-2xl font-bold text-gray-800">Unsub Workspace</h1>
-            <button onclick="location.href='/'" class="text-sm text-red-600 hover:underline">Log Out</button>
-        </header>
-
-        <div id="loading" class="text-center py-12">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p class="text-gray-600">Scanning your inbox for promotional senders...</p>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
+    
+    <!-- Outer Mobile Phone Container -->
+    <div class="w-full max-w-sm bg-white rounded-[40px] shadow-2xl border-8 border-gray-800 overflow-hidden flex flex-col h-[780px] relative">
+        
+        <!-- Top Phone Header / Notch Bar -->
+        <div class="bg-gray-900 text-white px-6 py-4 flex justify-between items-center shrink-0">
+            <h1 class="text-lg font-bold tracking-tight">Unsub Workspace</h1>
+            <button onclick="location.href='/'" class="text-xs bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full transition">Log Out</button>
         </div>
 
-        <div id="content" class="hidden">
-            <div class="bg-white rounded-xl shadow p-6 mb-6">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-semibold text-gray-700">Detected Subscriptions</h2>
-                    <button id="zapBtn" onclick="zapSelected()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition">
-                        Zap Selected
-                    </button>
-                </div>
-                <div id="subList" class="divide-y divide-gray-100 max-h-96 overflow-y-auto">
-                    <!-- Populated dynamically -->
+        <!-- Phone Screen Body -->
+        <div class="flex-1 overflow-y-auto p-5 bg-gray-50">
+            
+            <!-- Loading Indicator -->
+            <div id="loading" class="text-center py-20">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p class="text-gray-600 text-sm font-medium">Scanning inbox for senders...</p>
+            </div>
+
+            <!-- Subscriptions Container -->
+            <div id="content" class="hidden">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-4">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-sm font-semibold text-gray-700">Detected Senders</h2>
+                        <button id="zapBtn" onclick="zapSelected()" class="bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-red-700 shadow-sm transition">
+                            Zap Selected
+                        </button>
+                    </div>
+                    <div id="subList" class="divide-y divide-gray-100 max-h-[460px] overflow-y-auto">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
             </div>
+
+        </div>
+
+        <!-- Bottom Home Bar -->
+        <div class="bg-white py-2 flex justify-center shrink-0 border-t border-gray-100">
+            <div class="w-32 h-1 bg-gray-300 rounded-full"></div>
         </div>
     </div>
 
@@ -38,33 +54,38 @@
         const session = urlParams.get('session');
 
         async function loadSubscriptions() {
+            const loadingEl = document.getElementById('loading');
+            const contentEl = document.getElementById('content');
+            const listEl = document.getElementById('subList');
+
             try {
                 const res = await fetch(`/api/scan?session=${session}`);
                 const data = await res.json();
                 
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('content').style.display = 'block';
+                loadingEl.style.display = 'none';
+                contentEl.style.display = 'block';
 
-                const listEl = document.getElementById('subList');
                 if (!data.subscriptions || data.subscriptions.length === 0) {
-                    listEl.innerHTML = '<p class="text-gray-500 py-4 text-center">No promotional senders found in the recent scan range.</p>';
+                    listEl.innerHTML = '<p class="text-gray-500 py-8 text-center text-sm">No promotional senders found in the recent scan range.</p>';
                     return;
                 }
 
-                listEl.innerHTML = data.subscriptions.map((sub, i) => `
-                    <div class="py-3 flex items-center justify-between px-2 hover:bg-gray-50 rounded">
-                        <label class="flex items-center space-x-3 cursor-pointer">
-                            <input type="checkbox" value="${sub.email}" class="sub-checkbox h-4 w-4 text-indigo-600 rounded">
-                            <div>
-                                <p class="font-medium text-gray-800">${sub.name}</p>
-                                <p class="text-sm text-gray-500">${sub.email}</p>
+                listEl.innerHTML = data.subscriptions.map((sub) => `
+                    <div class="py-2.5 flex items-center justify-between px-2 hover:bg-gray-50 rounded-lg transition">
+                        <label class="flex items-center space-x-3 cursor-pointer overflow-hidden">
+                            <input type="checkbox" value="${sub.email}" class="sub-checkbox h-4 w-4 text-indigo-600 rounded shrink-0">
+                            <div class="truncate">
+                                <p class="text-sm font-medium text-gray-800 truncate">${sub.name}</p>
+                                <p class="text-xs text-gray-500 truncate">${sub.email}</p>
                             </div>
                         </label>
-                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">${sub.count} emails</span>
+                        <span class="text-[10px] bg-indigo-50 text-indigo-600 font-semibold px-2 py-0.5 rounded-full shrink-0 ml-2">${sub.count}</span>
                     </div>
                 `).join('');
             } catch (err) {
-                document.getElementById('loading').innerHTML = '<p class="text-red-500">Failed to load subscriptions. Please refresh.</p>';
+                loadingEl.style.display = 'none';
+                contentEl.style.display = 'block';
+                listEl.innerHTML = '<p class="text-red-500 text-sm text-center py-4">Failed to load subscriptions. Please try logging in again.</p>';
             }
         }
 
