@@ -1,0 +1,19 @@
+{
+  "name": "unsub-app",
+  "version": "1.0.0",
+  "description": "Batch-clean promotional emails & regain your inbox",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^4.19.2",
+    "googleapis": "^140.0.1",
+    "imapflow": "^2.10.0"
+  }
+}

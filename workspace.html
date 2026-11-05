@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsub - Workspace</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0f172a;
+            color: #1e293b;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .phone-container {
+            width: 390px;
+            height: 800px;
+            background: #ffffff;
+            border-radius: 48px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4), 0 0 0 10px #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 40px 16px 20px 16px;
+            position: relative;
+            overflow: hidden;
+        }
+        .phone-container::before {
+            content: '';
+            position: absolute;
+            top: 16px;
+            width: 120px;
+            height: 20px;
+            background: #1e293b;
+            border-radius: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .header { text-align: center; margin-top: 12px; margin-bottom: 8px; }
+        .soap-icon { font-size: 28px; margin-bottom: 2px; }
+        h1 { font-size: 18px; color: #0f172a; font-weight: 800; }
+        .notice {
+            font-size: 11px;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 6px 10px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin: 6px 0 10px 0;
+            text-align: center;
+        }
+        
+        .tab-bar {
+            display: flex;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 12px;
+            gap: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        .tab-content { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+        .tab-content.active { display: flex; }
+
+        /* TAB 1: SWIPE CARD */
+        .swipe-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .swipe-card {
+            width: 100%;
+            height: 320px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+        .swipe-actions { display: flex; gap: 12px; width: 100%; margin-top: 16px; }
+        .swipe-btn {
+            flex: 1;
+            padding: 14px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 14px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-keep { background: #e2e8f0; color: #334155; }
+        .btn-zap { background: #ef4444; color: #ffffff; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
+
+        /* TAB 2: HISTORY ROWS */
+        .history-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 6px 4px; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px; }
+        .history-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+        .history-row { display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; }
+
+        /* TAB 3: CONNECT HUB */
+        .providers-grid { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; padding-right: 2px; }
+        .provider-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 12px 14px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        
+        .loading-state { text-align: center; margin-top: 40px; color: #64748b; font-size: 13px; }
+        .zap-all-btn { background-color: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="phone-container">
+        <div class="header">
+            <div class="soap-icon">🧼🫧</div>
+            <h1>Unsub Hub</h1>
+            <div class="notice">
+                ✨ One-click clean: Automatically scans promotional mail. (Allow 24-48 hrs for sender removal).
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('swipe')">🔥 Daily Swipe</button>
+            <button class="tab-btn" onclick="switchTab('history')">📜 History Clean</button>
+            <button class="tab-btn" onclick="switchTab('connect')">🔌 Connect / Auth</button>
+        </div>
+
+        <!-- TAB 1: DAILY SWIPE CARDS -->
+        <div id="tab-swipe" class="tab-content active">
+            <div id="swipe-loading" class="loading-state">Scanning inbox automatically...</div>
+            <div id="swipe-view" class="swipe-container" style="display: none;">
+                <div class="swipe-card">
+                    <div>
+                        <span style="font-size: 11px; font-weight: 700; color: #ef4444; text-transform: uppercase;">Promotional Alert</span>
+                        <h2 id="card-name" style="font-size: 18px; margin: 8px 0;">Brand Name</h2>
+                        <p id="card-email" style="font-size: 12px; color: #64748b;">deals@brand.com</p>
+                    </div>
+                    <div style="background: #f1f5f9; padding: 12px; border-radius: 12px;">
+                        <span id="card-count" style="font-size: 13px; font-weight: 700; color: #0f172a;">0 promotional emails</span>
+                    </div>
+                </div>
+                <!-- Dedicated Keep and Zap Buttons -->
+                <div class="swipe-actions">
+                    <button class="swipe-btn btn-keep" onclick="handleSwipe('keep')">Keep</button>
+                    <button class="swipe-btn btn-zap" onclick="handleSwipe('zap')">⚡ Zap Sender</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: HISTORY CLEAN ROWS -->
+        <div id="tab-history" class="tab-content">
+            <div class="history-toolbar">
+                <label style="font-size: 12px; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="history-master" checked onchange="toggleHistoryAll(this)"> Select All
+                </label>
+                <button class="zap-all-btn" onclick="zapHistorySelected()">⚡ Zap Selected</button>
+            </div>
+            <div id="history-loading" class="loading-state">Scanning historical inbox...</div>
+            <div id="history-list" class="history-list" style="display: none;">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <!-- TAB 3: PROVIDER HUB -->
+        <div id="tab-connect" class="tab-content">
+            <div class="providers-grid">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Provider Account Status:</p>
+                <a href="/auth/google" class="provider-item">
+                    <span>🔴 Google / Gmail</span>
+                    <span>Re-authenticate →</span>
+                </a>
+                <a href="/index.html" class="provider-item">
+                    <span>🔁 Switch Provider</span>
+                    <span>Landing Page →</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let sendersCache = [];
+        let currentIndex = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session') || localStorage.getItem('userSession');
+
+            if (sessionId) {
+                localStorage.setItem('userSession', sessionId);
+                fetchSubscriptions(sessionId);
+            } else {
+                document.getElementById('swipe-loading').innerHTML = '<p class="loading-state">No active session found. <a href="/index.html">Click here to sign in</a>.</p>';
+                document.getElementById('history-loading').innerText = 'Please sign in first.';
+            }
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            if (tabName === 'swipe') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('tab-swipe').classList.add('active');
+            } else if (tabName === 'history') {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('tab-history').classList.add('active');
+            } else if (tabName === 'connect') {
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('tab-connect').classList.add('active');
+            }
+        }
+
+        function fetchSubscriptions(sessionId) {
+            fetch(`/api/scan?session=${sessionId}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('swipe-loading').style.display = 'none';
+                    document.getElementById('history-loading').style.display = 'none';
+
+                    if (!data.subscriptions || data.subscriptions.length === 0) {
+                        document.getElementById('swipe-view').innerHTML = '<p class="loading-state">No promotional senders detected in sample!</p>';
+                        document.getElementById('swipe-view').style.display = 'flex';
+                        return;
+                    }
+
+                    sendersCache = data.subscriptions;
+                    renderSwipeCard();
+                    renderHistoryList();
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('swipe-loading').innerText = 'Scan error. Please re-authenticate.';
+                });
+        }
+
+        function renderSwipeCard() {
+            if (currentIndex >= sendersCache.length) {
+                document.getElementById('swipe-view').innerHTML = '<p class="loading-state" style="font-size:16px; font-weight:700; color:#10b981;">🎉 All daily cards zapped!</p>';
+                document.getElementById('swipe-view').style.display = 'flex';
+                return;
+            }
+            const current = sendersCache[currentIndex];
+            document.getElementById('card-name').innerText = current.name || current.email;
+            document.getElementById('card-email').innerText = current.email;
+            document.getElementById('card-count').innerText = `${current.count} promotional emails`;
+            document.getElementById('swipe-view').style.display = 'flex';
+        }
+
+        function handleSwipe(action) {
+            if (action === 'zap') {
+                const current = sendersCache[currentIndex];
+                zapSenders([current.email]);
+            }
+            currentIndex++;
+            renderSwipeCard();
+        }
+
+        function renderHistoryList() {
+            const listContainer = document.getElementById('history-list');
+            listContainer.style.display = 'flex';
+            listContainer.innerHTML = sendersCache.map(sub => `
+                <div class="history-row">
+                    <input type="checkbox" class="history-checkbox" value="${sub.email}" checked style="width: 18px; height: 18px; accent-color: #ef4444;">
+                    <div style="flex: 1; text-align: left;">
+                        <span style="display: block; font-weight: 700; font-size: 13px; color: #0f172a;">${sub.name || sub.email}</span>
+                        <span style="font-size: 11px; color: #64748b;">${sub.count} promotional emails</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleHistoryAll(master) {
+            document.querySelectorAll('.history-checkbox').forEach(cb => cb.checked = master.checked);
+        }
+
+        function zapHistorySelected() {
+            const selected = Array.from(document.querySelectorAll('.history-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) {
+                alert('Please select at least one sender to zap.');
+                return;
+            }
+            if (!confirm(`Zap ${selected.length} selected senders?`)) return;
+            zapSenders(selected);
+        }
+
+        function zapSenders(sendersList) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionId = urlParams.get('session') || localStorage.getItem('userSession');
+
+            fetch('/api/zap', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ senders: sendersList, sessionId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Successfully zapped!');
+                    location.reload();
+                } else {
+                    alert('Zap failed: ' + data.message);
+                }
+            })
+            .catch(err => alert('Network error: ' + err.message));
+        }
+    </script>
+
+</body>
+</html>
