@@ -28,7 +28,6 @@ const PROVIDER_PORTS = {
     icloud: { host: 'imap.mail.me.com', port: 993 }
 };
 
-// Session storage map
 const activeCredentials = {};
 
 app.post('/api/connect', (req, res) => {
@@ -50,7 +49,6 @@ app.post('/api/connect', (req, res) => {
 app.get('/api/scan', async (req, res) => {
     const sessionId = req.query.session || req.headers['x-user-session'];
     
-    // 1. Verify session exists in activeCredentials
     const creds = activeCredentials[sessionId];
     if (!creds) {
         return res.status(401).json({ error: 'Invalid or expired session. Please log in again.' });
@@ -81,17 +79,23 @@ app.get('/api/scan', async (req, res) => {
                 return res.json({ subscriptions: [] });
             }
 
-            // Fetch the last 500 messages
             const rangeStart = Math.max(1, totalMessages - 499);
             const range = `${rangeStart}:${totalMessages}`;
 
-            for await (let message of client.fetch(range, { envelope: true, headers: ['list-unsubscribe'] })) {
+            for await (let message of client.fetch(range, { envelope: true, headers: ['list-unsubscribe', 'List-Unsubscribe'] })) {
                 const headers = message.headers;
                 
-                const hasListUnsubscribe = headers && (
-                    headers.toString().toLowerCase().includes('list-unsubscribe') ||
-                    headers.has('list-unsubscribe')
-                );
+                let hasListUnsubscribe = false;
+                if (headers) {
+                    if (typeof headers.get === 'function') {
+                        hasListUnsubscribe = !!headers.get('list-unsubscribe') || !!headers.get('List-Unsubscribe');
+                    } else if (headers instanceof Map) {
+                        hasListUnsubscribe = headers.has('list-unsubscribe') || headers.has('List-Unsubscribe');
+                    } else {
+                        const headerStr = JSON.stringify(headers).toLowerCase();
+                        hasListUnsubscribe = headerStr.includes('list-unsubscribe');
+                    }
+                }
 
                 if (hasListUnsubscribe) {
                     const fromObj = message.envelope.from?.[0] || {};
@@ -110,9 +114,7 @@ app.get('/api/scan', async (req, res) => {
 
         await client.logout();
 
-        // 2. Group by email and sum up counts
         const aggregatedMap = new Map();
-
         rawSubscriptions.forEach(sub => {
             if (aggregatedMap.has(sub.email)) {
                 const existing = aggregatedMap.get(sub.email);
@@ -130,13 +132,11 @@ app.get('/api/scan', async (req, res) => {
             .sort((a, b) => b.count - a.count);
 
         console.log(`[SCAN SUCCESS] Found ${subscriptions.length} promotional senders for ${creds.email}`);
-        
         return res.json({ subscriptions });
 
     } catch (error) {
         console.error('[SCAN ERROR]', error);
         try { await client.logout(); } catch (_) {}
-        
         return res.status(500).json({ 
             error: 'Failed to scan inbox', 
             details: error.message 
@@ -161,7 +161,7 @@ app.post('/api/zap', async (req, res) => {
 
     try {
         await client.connect();
-        try { await client.mailboxOpen('[Gmail]/All Mail'); } catch(e) { await client.mailboxOpen('INBOX'); }
+        try { await client.mailboxOpen('INBOX'); } catch(e) {}
         
         if (senders && senders.length > 0) {
             for (const targetEmail of senders) {
@@ -190,33 +190,24 @@ app.post('/api/zap', async (req, res) => {
     }
 });
 
-// 1. Google OAuth Routes
+// Google OAuth Routes
 app.get('/auth/google', (req, res) => {
     const scopes = [
         'https://www.googleapis.com/auth/userinfo.email',
         'https://www.googleapis.com/auth/gmail.readonly',
         'https://www.googleapis.com/auth/gmail.modify'
     ];
-
-    const authUrl = oauth2Client.generateAuthUrl({
-        access_type: 'offline',
-        scope: scopes,
-        prompt: 'consent'
-    });
-
+    const authUrl = oauth2Client.generateAuthUrl({ access_type: 'offline', scope: scopes, prompt: 'consent' });
     res.redirect(authUrl);
 });
 
 app.get('/auth/google/callback', async (req, res) => {
     const code = req.query.code;
-    if (!code) {
-        return res.status(400).send('Google OAuth authorization code missing.');
-    }
+    if (!code) return res.status(400).send('Google OAuth authorization code missing.');
 
     try {
         const { tokens } = await oauth2Client.getToken(code);
         oauth2Client.setCredentials(tokens);
-
         const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
         const userInfo = await oauth2.userinfo.get();
         const userEmail = userInfo.data.email;
@@ -236,7 +227,7 @@ app.get('/auth/google/callback', async (req, res) => {
     }
 });
 
-// 2. Outlook / Azure OAuth Routes
+// Outlook / Azure OAuth Routes
 app.get('/auth/outlook', (req, res) => {
     const tenant = process.env.AZURE_TENANT_ID || 'common';
     const clientId = process.env.OUTLOOK_CLIENT_ID || process.env.AZURE_CLIENT_ID || 'ddb2af53-7195-45cd-ae95-0937be46522e';
@@ -249,9 +240,7 @@ app.get('/auth/outlook', (req, res) => {
 
 app.get('/auth/outlook/callback', async (req, res) => {
     const code = req.query.code;
-    if (!code) {
-        return res.status(400).send('Microsoft OAuth authorization code missing.');
-    }
+    if (!code) return res.status(400).send('Microsoft OAuth authorization code missing.');
 
     try {
         const tenant = process.env.AZURE_TENANT_ID || 'common';
