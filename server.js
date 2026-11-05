@@ -60,7 +60,7 @@ app.get('/api/scan', async (req, res) => {
         secure: true,
         auth: {
             user: creds.email,
-            pass: creds.token
+            accessToken: creds.token // Corrected for OAuth tokens!
         },
         logger: false
     });
@@ -155,7 +155,7 @@ app.post('/api/zap', async (req, res) => {
         host: creds.config.host,
         port: creds.config.port,
         secure: true,
-        auth: { user: creds.email, pass: creds.token },
+        auth: { user: creds.email, accessToken: creds.token },
         logger: false
     });
 
