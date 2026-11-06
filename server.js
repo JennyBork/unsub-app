@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const { ImapFlow } = require('imapflow');
 const { google } = require('googleapis');
 
@@ -54,26 +55,37 @@ app.get('/api/scan', async (req, res) => {
         return res.status(401).json({ error: 'Invalid or expired session. Please log in again.' });
     }
 
+    const isOAuth = creds.token && (creds.config.host.includes('office365') || creds.config.host.includes('gmail'));
+    
+    let authConfig = {
+        user: creds.email,
+        pass: creds.token
+    };
+
+    if (isOAuth) {
+        authConfig = {
+            user: creds.email,
+            accessToken: creds.token,
+            xoauth2: Buffer.from(`user=${creds.email}\x01auth=Bearer ${creds.token}\x01\x01`).toString('base64')
+        };
+    }
+
     const client = new ImapFlow({
         host: creds.config.host,
         port: creds.config.port,
         secure: true,
-        auth: {
-            user: creds.email,
-            accessToken: creds.token // Corrected for OAuth tokens!
-        },
+        auth: authConfig,
         logger: false
     });
 
     try {
         await client.connect();
         let lock = await client.getMailboxLock('INBOX');
-
         const rawSubscriptions = [];
 
         try {
             const status = await client.status('INBOX', { messages: true });
-            const totalMessages = status.messages;
+            const totalMessages = status.messages || 0;
 
             if (totalMessages === 0) {
                 return res.json({ subscriptions: [] });
@@ -82,30 +94,33 @@ app.get('/api/scan', async (req, res) => {
             const rangeStart = Math.max(1, totalMessages - 499);
             const range = `${rangeStart}:${totalMessages}`;
 
-            for await (let message of client.fetch(range, { envelope: true, headers: ['list-unsubscribe', 'List-Unsubscribe'] })) {
+            for await (let message of client.fetch(range, { envelope: true, headers: true })) {
+                let isPromotional = false;
                 const headers = message.headers;
-                
-                let hasListUnsubscribe = false;
+
                 if (headers) {
-                    if (typeof headers.get === 'function') {
-                        hasListUnsubscribe = !!headers.get('list-unsubscribe') || !!headers.get('List-Unsubscribe');
-                    } else if (headers instanceof Map) {
-                        hasListUnsubscribe = headers.has('list-unsubscribe') || headers.has('List-Unsubscribe');
-                    } else {
-                        const headerStr = JSON.stringify(headers).toLowerCase();
-                        hasListUnsubscribe = headerStr.includes('list-unsubscribe');
+                    const headerStr = typeof headers.toString === 'function' 
+                        ? headers.toString().toLowerCase() 
+                        : JSON.stringify(headers).toLowerCase();
+
+                    if (headerStr.includes('unsubscribe')) {
+                        isPromotional = true;
                     }
                 }
 
-                if (hasListUnsubscribe) {
-                    const fromObj = message.envelope.from?.[0] || {};
-                    const senderEmail = (fromObj.address || 'unknown@sender.com').toLowerCase();
-                    const senderName = fromObj.name || senderEmail.split('@')[0];
+                const fromObj = message.envelope?.from?.[0] || {};
+                const senderEmail = (fromObj.address || '').toLowerCase();
+                const senderName = fromObj.name || (senderEmail ? senderEmail.split('@')[0] : 'Unknown');
 
-                    rawSubscriptions.push({
-                        name: senderName,
-                        email: senderEmail
-                    });
+                if (!isPromotional && senderEmail) {
+                    const promoKeywords = ['no-reply', 'noreply', 'newsletter', 'marketing', 'promo', 'notifications', 'info@', 'news@', 'updates@'];
+                    if (promoKeywords.some(kw => senderEmail.includes(kw))) {
+                        isPromotional = true;
+                    }
+                }
+
+                if (isPromotional && senderEmail) {
+                    rawSubscriptions.push({ name: senderName, email: senderEmail });
                 }
             }
         } finally {
@@ -117,33 +132,24 @@ app.get('/api/scan', async (req, res) => {
         const aggregatedMap = new Map();
         rawSubscriptions.forEach(sub => {
             if (aggregatedMap.has(sub.email)) {
-                const existing = aggregatedMap.get(sub.email);
-                existing.count += 1;
+                aggregatedMap.get(sub.email).count += 1;
             } else {
-                aggregatedMap.set(sub.email, {
-                    name: sub.name,
-                    email: sub.email,
-                    count: 1
-                });
+                aggregatedMap.set(sub.email, { name: sub.name, email: sub.email, count: 1 });
             }
         });
 
-        const subscriptions = Array.from(aggregatedMap.values())
-            .sort((a, b) => b.count - a.count);
-
-        console.log(`[SCAN SUCCESS] Found ${subscriptions.length} promotional senders for ${creds.email}`);
+        const subscriptions = Array.from(aggregatedMap.values()).sort((a, b) => b.count - a.count);
+        console.log(`[SCAN RESULT] Found ${subscriptions.length} senders for ${creds.email}`);
         return res.json({ subscriptions });
 
     } catch (error) {
         console.error('[SCAN ERROR]', error);
         try { await client.logout(); } catch (_) {}
-        return res.status(500).json({ 
-            error: 'Failed to scan inbox', 
-            details: error.message 
-        });
+        return res.status(500).json({ error: 'Failed to scan inbox', details: error.message });
     }
 });
 
+// Purge/Delete Emails Route
 app.post('/api/zap', async (req, res) => {
     const { senders } = req.body;
     const userSessionId = req.headers['x-user-session'] || req.body.sessionId;
@@ -151,11 +157,22 @@ app.post('/api/zap', async (req, res) => {
 
     if (!creds) return res.json({ success: false, message: 'No active session found.' });
 
+    const isOAuth = creds.token && (creds.config.host.includes('office365') || creds.config.host.includes('gmail'));
+    let authConfig = { user: creds.email, pass: creds.token };
+
+    if (isOAuth) {
+        authConfig = {
+            user: creds.email,
+            accessToken: creds.token,
+            xoauth2: Buffer.from(`user=${creds.email}\x01auth=Bearer ${creds.token}\x01\x01`).toString('base64')
+        };
+    }
+
     const client = new ImapFlow({
         host: creds.config.host,
         port: creds.config.port,
         secure: true,
-        auth: { user: creds.email, accessToken: creds.token },
+        auth: authConfig,
         logger: false
     });
 
@@ -184,10 +201,19 @@ app.post('/api/zap', async (req, res) => {
 
         try { await client.mailboxClose(); } catch(e) {}
         await client.logout();
-        res.json({ success: true });
+        res.json({ 
+            success: true, 
+            message: 'Emails zapped successfully.', 
+            notice: 'Unsubscribe request registered. Standard provider processing takes 24-48 hours.' 
+        });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
+});
+
+// Explicit Workspace HTML Route
+app.get('/workspace', (req, res) => {
+    res.sendFile(path.join(__dirname, 'workspace.html'));
 });
 
 // Google OAuth Routes
