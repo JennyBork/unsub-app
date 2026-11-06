@@ -96,11 +96,11 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
 <div class="provider-grid">
 <div class="provider-card" onclick="connectMailboxChannel('gmail', this)">🔴 Gmail</div>
 <div class="provider-card" onclick="connectMailboxChannel('yahoo', this)">🟣 Yahoo</div>
-<div class="provider-card" onclick="connectMailboxChannel('icloud', this)\">☁️ iCloud</div>
-<div class="provider-card" onclick="connectMailboxChannel('outlook', this)\">🔵 Outlook</div>
-<div class="provider-card" onclick="connectMailboxChannel('aol', this)\">📬 AOL Mail</div>
-<div class="provider-card" onclick="connectMailboxChannel('proton', this)\">🔒 ProtonMail</div>
-<div class="provider-card" style="grid-column: span 2; background: #f1f5f9; color: #475569;" onclick="connectMailboxChannel('imap', this)\">⚙️ Other (Custom IMAP)</div>
+<div class="provider-card" onclick="connectMailboxChannel('icloud', this)">☁️ iCloud</div>
+<div class="provider-card" onclick="connectMailboxChannel('outlook', this)">🔵 Outlook</div>
+<div class="provider-card" onclick="connectMailboxChannel('aol', this)">📬 AOL Mail</div>
+<div class="provider-card" onclick="connectMailboxChannel('proton', this)">🔒 ProtonMail</div>
+<div class="provider-card" style="grid-column: span 2; background: #f1f5f9; color: #475569;" onclick="connectMailboxChannel('imap', this)">⚙️ Other (Custom IMAP)</div>
 <div id="imap-instructions-drawer" class="hidden" style="grid-column: span 2; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 15px; text-align: left; margin-top: 10px; box-sizing: border-box;">
     <strong style="color: #1e293b; display: block; margin-bottom: 8px; font-size: 11px;">📋 Custom IMAP Connection Fields:</strong>
     <div style="margin-bottom: 8px;">
@@ -129,7 +129,7 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
 <div class="price-amount">$2.00</div>
 <div class="price-subtitle">One-Time Lifetime Access Token (Or $1.99/mo later)</div>
 </div>
-<div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 16px; text-align: center; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+<div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 20px; border-radius: 16px; text-align: center; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.02);'>
 <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 15px;">You are unlocking premium access to the full Unsub suite, including continuous background scanning and next-day zero-spam insurance.</p>
 <button class="zap-button" style="background-color: #10b981; box-shadow: 0 4px 15px rgba(16,185,129,0.3);" onclick="handlePaymentSubmit()">💳 Secure My Lifetime Slot Via Stripe</button>
 </div>
@@ -163,7 +163,7 @@ async function connectMailboxChannel(name, element) {
     if(name === 'imap') {
         const d = document.getElementById('imap-instructions-drawer');
         d.classList.toggle('hidden');
-        updateTicker(d.classList.contains('hidden') ? 'Closed IMAP guide drawer.' : 'Opened Custom IMAP Connection drawer panel.');
+        updateTicker(d.classList.contains('hidden') ? 'Closed IMAP guide drawer.' : 'Opened Custom IMAP fields drawer panel.');
         return;
     }
     
@@ -215,7 +215,6 @@ async function executeConnectionPayload(email, token, provider, customHost, cust
         updateTicker('Connection failure.');
     }
 }
-
 function switchView(t) {
     document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
     document.getElementById('view-list-container').classList.add('hidden');
@@ -291,7 +290,7 @@ function renderDeck() {
         el.id = 'card-' + index;
         el.style.transform = 'scale(' + (1 - index * 0.04) + ') translateY(' + (index * 12) + 'px)';
         el.style.zIndex = 100 - index;
-        el.innerHTML = '<div class=\"card-meta\"><span class=\"card-tag\">Promo</span><span class=\"card-time\">Just Now</span></div><div class=\"card-body\"><div class=\"card-sender-name\">' + card.sender + '</div><div class=\"card-sender-email\">' + card.email + '</div><div class=\"card-subject\">\"' + card.subject + '\"</div></div>';
+        el.innerHTML = '<div class="card-meta"><span class="card-tag">Promo</span><span class="card-time">Just Now</span></div><div class="card-body"><div class="card-sender-name">' + card.sender + '</div><div class="card-sender-email">' + card.email + '</div><div class="card-subject">"' + card.subject + '"</div></div>';
         s.appendChild(el);
     });
 }
@@ -331,7 +330,7 @@ async function executeZap() {
     if (emails.length === 0) { alert("Please select at least one sender row to zap!"); return; }
     
     updateTicker('Batch zapping ' + emails.length + ' targets...');
-    document.getElementById('ui-list').innerHTML = '<div class=\"loading-text\">⚡ Executing bulk delete...</div>';
+    document.getElementById('ui-list').innerHTML = '<div class="loading-text">⚡ Executing bulk delete...</div>';
     const r = await fetch('/api/zap', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json', 'X-User-Session': sessionId }, 
