@@ -29,36 +29,35 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
 .action-panel { padding: 20px; background-color: #ffffff; border-top: 1px solid #e2e8f0; width: 100%; position: relative; z-index: 10; }
 .zap-button { width: 100%; background-color: #e74c3c; color: white; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(231,76,60,0.2); }
 .deck-workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 25px 20px; }
+.card-stack { width: 100%; max-width: 320px; height: 380px; position: relative; }
+.swipe-card { position: absolute; width: 100%; height: 100%; background: #ffffff; border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; padding: 24px 20px; display: flex; flex-direction: column; justify-content: space-between; transition: 0.3s; }
 .provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; width: 100%; }
 .provider-card { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px 10px; font-size: 14px; text-align: center; font-weight: 700; cursor: pointer; transition: 0.2s; color: #334155; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-.provider-card:hover { border-color: #2c3e50; background-color: #f8fafc; }
-/* 🎌 POPUP SHIELD OVERRIDE */
+.provider-card:hover, .provider-card.selected { border-color: #2c3e50; background-color: #f8fafc; }
 .oauth-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.85); z-index: 100; display: flex; justify-content: center; align-items: center; padding: 20px; }
 .webview-panel { background: white; width: 100%; max-width: 340px; border-radius: 24px; padding: 30px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
-/* 💎 PREMIUM BILLING SYSTEM ALIGNMENT */
 .pay-workspace { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 30px 24px; background: #ffffff; }
 .premium-card { background: #fafafa; border: 2px solid #f1f5f9; border-radius: 20px; padding: 24px; width: 100%; margin-top: auto; margin-bottom: auto; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 .premium-badge { background: #fffbeb; border: 1px solid #fef3c7; color: #d97706; padding: 8px 12px; border-radius: 12px; font-size: 12px; font-weight: 700; display: inline-block; margin-bottom: 20px; }
 .price-hero { margin-bottom: 24px; }
 .price-amount { font-size: 48px; font-weight: 900; color: #0f172a; letter-spacing: -1px; }
 .price-subtitle { font-size: 13px; color: #64748b; font-weight: 500; margin-top: 4px; }
+.trust-banner { text-align: center; font-size: 11px; color: #94a3b8; margin-top: 15px; }
 </style>
 </head>
 <body>
 <div class="app-container">
-<!-- Elegant simulated secure gateway interface panel -->
 <div id="secure-oauth-modal" class="oauth-overlay hidden">
     <div class="webview-panel">
         <div style="font-size: 40px; margin-bottom: 16px;">🔐</div>
         <h3 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 8px;">Connecting Cloud Vault...</h3>
-        <p id="handshake-status-text" style="font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 24px;">Initializing secure tokens mapping matrix with provider streams safely...</p>
+        <p id="handshake-status-text" style="font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 24px;">Initializing tokens mapping matrix context...</p>
         <div style="width: 100%; display: flex; gap: 10px;">
             <button onclick="closeSecureHandshakeTray(false)" style="flex: 1; background: #f1f5f9; color: #475569; border: none; padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;">Cancel</button>
-            <button onclick="closeSecureHandshakeTray(true)" style="flex: 1; background: #10b981; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(16,185,129,0.2);">Approve Link</button>
+            <button onclick="closeSecureHandshakeTray(true)" style="flex: 1; background: #10b981; color: white; border: none; padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer;">Approve Link</button>
         </div>
     </div>
 </div>
-
 <div class="app-header">
 <h1>🧼 Unsub</h1>
 <button onclick="localStorage.clear();sessionStorage.clear();location.reload();" style="position:absolute;top:20px;right:20px;background:#1e293b;color:#fff;border:none;padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🔄 Reset App</button>
@@ -87,12 +86,24 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
 <h3 style="font-size:16px; color:#1e293b; margin-bottom:8px; font-weight: 800;">🔌 One-Tap Secure Login</h3>
 <p style="font-size:13px; color:#64748b; line-height:1.4; padding: 0 10px;">Tap your mail provider below to immediately open the official secure login vault panel safely via encrypted loop handshake.</p>
 <div class="provider-grid">
-<div class="provider-card" onclick="triggerOAuthRedirect('gmail')">🔴 Gmail</div>
-<div class="provider-card" onclick="triggerOAuthRedirect('yahoo')">🟣 Yahoo</div>
-<div class="provider-card" onclick="triggerOAuthRedirect('icloud')">☁️ iCloud</div>
-<div class="provider-card" onclick="triggerOAuthRedirect('outlook')">🔵 Outlook</div>
-<div class="provider-card" onclick="triggerOAuthRedirect('aol')">📬 AOL Mail</div>
-<div class="provider-card" onclick="triggerOAuthRedirect('proton')">🔒 ProtonMail</div>
+<div class="provider-card" onclick="triggerOAuthRedirect('gmail', this)">🔴 Gmail</div>
+<div class="provider-card" onclick="triggerOAuthRedirect('yahoo', this)">🟣 Yahoo</div>
+<div class="provider-card" onclick="triggerOAuthRedirect('icloud', this)">☁️ iCloud</div>
+<div class="provider-card" onclick="triggerOAuthRedirect('outlook', this)">🔵 Outlook</div>
+<div class="provider-card" onclick="triggerOAuthRedirect('aol', this)">📬 AOL Mail</div>
+<div class="provider-card" onclick="triggerOAuthRedirect('proton', this)">🔒 ProtonMail</div>
+<div class="provider-card" style="grid-column: span 2; background: #f1f5f9; color: #475569;" onclick="triggerOAuthRedirect('imap', this)">⚙️ Other (Custom IMAP SSL Server)</div>
+<div id="imap-instructions-drawer" class="hidden" style="grid-column: span 2; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 15px; text-align: left; margin-top: 10px; box-sizing: border-box;">
+    <strong style="color: #1e293b; display: block; margin-bottom: 8px; font-size: 11px;">📋 Custom IMAP Connection Fields:</strong>
+    <div style="margin-bottom: 8px;">
+        <label style="font-size: 10px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">INCOMING IMAP SERVER HOST</label>
+        <input type="text" id="imap-server-input" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px;" placeholder="://mail.com">
+    </div>
+    <div style="margin-bottom: 12px;">
+        <label style="font-size: 10px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">PORT (SECURE SSL DEFAULT)</label>
+        <input type="text" id="imap-port-input" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px;" value="993">
+    </div>
+</div>
 </div>
 </div>
 <div id="swipe-deck-interface" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; justify-content:space-between; flex:1;">
@@ -124,7 +135,6 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
     </div>
 </div>
 </div>
-
 <div id="view-pay-container" class="hidden pay-workspace">
 <div class="premium-card">
     <div class="premium-badge">🛡️ CHARTER WAITLIST SPECIAL</div>
@@ -135,13 +145,14 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
     <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-bottom: 24px; padding: 0 10px;">Unlock full background automation cleanup maps, unread spam metrics insurance shields, and unlimited permanent filters.</p>
     <button class="zap-button" style="background: #10b981; box-shadow: 0 4px 15px rgba(16,185,129,0.35); padding: 18px;" onclick="handlePaymentSubmit()">💳 Secure My Lifetime Slot Via Stripe</button>
 </div>
-<div class="trust-banner" style="text-align: center; font-size: 11px; color: #94a3b8; margin-top: 15px;">🔒 Bank-grade 256-bit SSL encrypted checkout platform</div>
+<div class="trust-banner">🔒 Bank-grade 256-bit SSL encrypted checkout platform</div>
 </div>
 </div>
 </div>
 <script>
 let freshDailyPromos = [];
 let currentIndex = 0;
+let currentProvider = '';
 const sessionId = 'user_' + Math.random().toString(36).substring(2, 9);
 
 function updateTicker(t) { document.getElementById('app-ticker').innerText = '🤖 Log: ' + t; }
@@ -159,36 +170,47 @@ function switchView(t) {
     document.getElementById('view-list-container').classList.add('hidden');
     document.getElementById('view-swipe-container').classList.add('hidden');
     document.getElementById('view-pay-container').classList.add('hidden');
-    if(t === 'list') {
-        document.getElementById('tab-list').classList.add('active');
-        document.getElementById('view-list-container').classList.remove('hidden');
-    } else if(t === 'swipe') {
-        document.getElementById('tab-swipe').classList.add('active');
-        document.getElementById('view-swipe-container').classList.remove('hidden');
-    } else {
-        document.getElementById('tab-pay').classList.add('active');
-        document.getElementById('view-pay-container').classList.remove('hidden');
-    }
+    if(t === 'list') { document.getElementById('tab-list').classList.add('active'); document.getElementById('view-list-container').classList.remove('hidden'); } 
+    else if(t === 'swipe') { document.getElementById('tab-swipe').classList.add('active'); document.getElementById('view-swipe-container').classList.remove('hidden'); } 
+    else { document.getElementById('tab-pay').classList.add('active'); document.getElementById('view-pay-container').classList.remove('hidden'); }
 }
 
-function triggerOAuthRedirect(provider) {
-    document.getElementById('handshake-status-text').innerText = `Syncing encrypted callback handshakes directly with secure ${provider.toUpperCase()} access servers...`;
+function triggerOAuthRedirect(provider, element) {
+    if(provider === 'imap') {
+        document.getElementById('imap-instructions-drawer').classList.toggle('hidden');
+        return;
+    }
+    currentProvider = provider;
+    document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
+    if(element) element.classList.add('selected');
+    document.getElementById('handshake-status-text').innerText = `Preparing direct encrypted handshake with secure ${provider.toUpperCase()} access servers...`;
     document.getElementById('secure-oauth-modal').classList.remove('hidden');
 }
 
-function closeSecureHandshakeTray(approved) {
+async function closeSecureHandshakeTray(approved) {
     document.getElementById('secure-oauth-modal').classList.add('hidden');
-    if(approved) {
-        document.getElementById('provider-login-screen').classList.add('hidden');
-        document.getElementById('swipe-deck-interface').classList.remove('hidden');
-        updateTicker('Handshake approved via secure tunnel.');
-        loadLiveInboxData();
+    if(approved && currentProvider) {
+        updateTicker(`Authenticating live ${currentProvider.toUpperCase()} stream via Render environment credentials...`);
+        try {
+            const hostVal = document.getElementById('imap-server-input').value.trim();
+            const portVal = document.getElementById('imap-port-input').value.trim();
+            const r = await fetch('/api/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User-Session': sessionId },
+                body: JSON.stringify({ provider: currentProvider, customHost: hostVal, customPort: portVal })
+            });
+            const res = await r.json();
+            if(res.success) {
+                document.getElementById('provider-login-screen').classList.add('hidden');
+                document.getElementById('swipe-deck-interface').classList.remove('hidden');
+                updateTicker('Handshake Approved. Secure live mail stream initialized.');
+                await loadLiveInboxData();
+            } else { alert("Secure Connection Refused: Verify variables envelopes context mapping."); }
+        } catch(e) { updateTicker('Network timeout error.'); }
     }
 }
 
-function handlePaymentSubmit() {
-    window.open("https://stripe.com", '_blank');
-}
+function handlePaymentSubmit() { window.open("https://stripe.com", '_blank'); }
 
 function renderDeck() {
     if(freshDailyPromos.length === 0 || currentIndex >= freshDailyPromos.length) {
@@ -210,9 +232,7 @@ let currentX = 0;
 
 card.addEventListener('pointerdown', (e) => {
     if (freshDailyPromos.length === 0 || currentIndex >= freshDailyPromos.length) return;
-    isDragging = true;
-    startX = e.clientX;
-    card.setPointerCapture(e.pointerId);
+    isDragging = true; startX = e.clientX; card.setPointerCapture(e.pointerId);
 });
 
 card.addEventListener('pointermove', (e) => {
@@ -224,8 +244,7 @@ card.addEventListener('pointermove', (e) => {
 
 card.addEventListener('pointerup', (e) => {
     if (!isDragging) return;
-    isDragging = false;
-    card.releasePointerCapture(e.pointerId);
+    isDragging = false; card.releasePointerCapture(e.pointerId);
     card.style.transition = 'transform 0.3s ease';
     if (currentX > 100 || currentX < -100) { currentIndex++; renderDeck(); }
     card.style.transform = 'translateX(0px) rotate(0deg)';
@@ -234,8 +253,7 @@ card.addEventListener('pointerup', (e) => {
 
 function triggerSwipe(direction) {
     if (freshDailyPromos.length === 0 || currentIndex >= freshDailyPromos.length) return;
-    currentIndex++;
-    renderDeck();
+    currentIndex++; renderDeck();
 }
 
 async function loadLiveInboxData() {
@@ -244,13 +262,9 @@ async function loadLiveInboxData() {
         const d = await r.json();
         const c = document.getElementById('ui-list');
         c.innerHTML = ''; 
-        if (!d || d.length === 0) {
-            c.innerHTML = '<div class="loading-text">🎉 Mailbox completely clean!</div>';
-            return;
-        }
+        if (!d || d.length === 0) { c.innerHTML = '<div class="loading-text">🎉 Mailbox clean!</div>'; return; }
         document.getElementById('master-select-all-header').classList.remove('hidden');
-        freshDailyPromos = [];
-        currentIndex = 0;
+        freshDailyPromos = []; currentIndex = 0;
         d.forEach((item, index) => {
             const row = document.createElement('div');
             row.className = 'sender-item';
