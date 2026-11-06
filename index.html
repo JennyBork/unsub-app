@@ -90,6 +90,19 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
 <div class="provider-card" onclick="triggerOAuthRedirect('outlook')">🔵 Outlook</div>
 <div class="provider-card" onclick="triggerOAuthRedirect('aol')">📬 AOL Mail</div>
 <div class="provider-card" onclick="triggerOAuthRedirect('proton')">🔒 ProtonMail</div>
+<div class="provider-card" style="grid-column: span 2; background: #f1f5f9; color: #475569;" onclick="toggleManualImapDrawer()">⚙️ Other (Custom IMAP Server)</div>
+<div id="imap-instructions-drawer" class="hidden" style="grid-column: span 2; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 15px; text-align: left; margin-top: 10px; box-sizing: border-box;">
+    <strong style="color: #1e293b; display: block; margin-bottom: 8px; font-size: 11px;">📋 Custom IMAP Connection Fields:</strong>
+    <div style="margin-bottom: 8px;">
+        <label style="font-size: 10px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">INCOMING IMAP SERVER HOST</label>
+        <input type="text" id="imap-server-input" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px;" placeholder="://mail.com">
+    </div>
+    <div style="margin-bottom: 12px;">
+        <label style="font-size: 10px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">PORT (SECURE SSL DEFAULT)</label>
+        <input type="text" id="imap-port-input" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px;" value="993">
+    </div>
+    <button class="zap-button" style="padding: 10px; font-size: 13px; border-radius: 8px; background-color: #2c3e50;" onclick="triggerOAuthRedirect('imap')">🔌 Connect Manual Server</button>
+</div>
 </div>
 </div>
 <div id="swipe-deck-interface" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; justify-content:space-between; flex:1;">
@@ -144,26 +157,10 @@ const sessionId = 'user_' + Math.random().toString(36).substring(2, 9);
 
 function updateTicker(t) { document.getElementById('app-ticker').innerText = '🤖 Log: ' + t; }
 
-function toggleMasterSelectAll(masterRow) {
-    const masterBox = document.getElementById('master-select-all-box');
-    const isChecked = masterRow.classList.toggle('selected');
-    const childRows = document.querySelectorAll('#ui-list .sender-item');
-    
-    childRows.forEach(row => {
-        if (isChecked) {
-            row.classList.add('selected');
-        } else {
-            row.classList.remove('selected');
-        }
-    });
-    updateTicker(isChecked ? 'Selected all sender streams for bulk elimination.' : 'Cleared global selection matrix slots.');
-}
-
-function connectMailboxChannel(name, element) {
-    chosenProvider = name;
-    document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
-    if(element) element.classList.add('selected');
-    triggerOAuthRedirect(name);
+function toggleManualImapDrawer() {
+    const d = document.getElementById('imap-instructions-drawer');
+    d.classList.toggle('hidden');
+    updateTicker(d.classList.contains('hidden') ? 'Closed custom IMAP configuration panel.' : 'Opened manual IMAP server input configuration fields tray.');
 }
 
 function switchView(t) {
@@ -183,9 +180,17 @@ function switchView(t) {
     }
 }
 
+// ⚡ UNIVERSAL DIRECT HANDSHAKE: Fires your custom client secret redirect parameters instantly on tap!
 function triggerOAuthRedirect(provider) {
-    updateTicker(`Redirecting securely via official ${provider.toUpperCase()} cloud handshake link...`);
-    window.location.href = `/api/auth/${provider}?session=${sessionId}`;
+    let targetUrl = `/api/auth/${provider}?session=${sessionId}`;
+    if(provider === 'imap') {
+        const host = document.getElementById('imap-server-input').value.trim();
+        const port = document.getElementById('imap-port-input').value.trim();
+        if(!host || !port) { alert("Please input your custom server host and port configurations first!"); return; }
+        targetUrl += `&host=${encodeURIComponent(host)}&port=${port}`;
+    }
+    updateTicker(`Launching secure handshake endpoint gate loop for: ${provider.toUpperCase()}`);
+    window.location.href = targetUrl;
 }
 
 function handlePaymentSubmit() {
@@ -197,7 +202,6 @@ function renderDeck() {
         document.getElementById('sender-name').innerText = "Inbox Zero Reached! 🎉";
         document.getElementById('sender-email').innerText = "All promotional senders processed.";
         document.getElementById('sender-subject').innerText = "You're completely caught up.";
-        document.getElementById('sender-category').innerText = "Completed";
         document.getElementById('queue-counter').innerText = `0 in queue`;
         return;
     }
@@ -205,84 +209,12 @@ function renderDeck() {
     document.getElementById('sender-name').innerText = currentCard.name;
     document.getElementById('sender-email').innerText = currentCard.email;
     document.getElementById('sender-subject').innerText = `"${currentCard.subject}"`;
-    document.getElementById('sender-category').innerText = currentCard.category;
-    document.getElementById('queue-counter').innerText = (freshDailyPromos.length - currentIndex) + ' in queue';
+    document.getElementById('queue-counter').innerText = `${freshDailyPromos.length - currentIndex} in queue`;
 }
 
-const card = document.getElementById('swipe-card');
-let isDragging = false;
-let startX = 0;
-let currentX = 0;
-
-card.addEventListener('pointerdown', (e) => {
-    if (freshDailyPromos.length === 0 || currentIndex >= freshDailyPromos.length) return;
-    isDragging = true;
-    startX = e.clientX;
-    card.setPointerCapture(e.pointerId);
-    card.style.transition = 'none';
-});
-
-card.addEventListener('pointermove', (e) => {
-    if (!isDragging) return;
-    currentX = e.clientX - startX;
-    const rotation = currentX * 0.08;
-    card.style.transform = `translateX(` + currentX + `px) rotate(` + rotation + `deg)`;
-    const badge = document.getElementById('swipe-badge');
-    if (currentX > 40) {
-        badge.innerText = "ZAP ⚡";
-        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-600 opacity-100 transition-opacity";
-    } else if (currentX < -40) {
-        badge.innerText = "KEEP 🛡️";
-        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-600 opacity-100 transition-opacity";
-    } else {
-        badge.style.opacity = '0';
-    }
-});
-
-card.addEventListener('pointerup', (e) => {
-    if (!isDragging) return;
-    isDragging = false;
-    card.releasePointerCapture(e.pointerId);
-    card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-    if (currentX > 100) { completeSwipe('right'); } 
-    else if (currentX < -100) { completeSwipe('left'); } 
-    else {
-        card.style.transform = 'translateX(0px) rotate(0deg)';
-        document.getElementById('swipe-badge').style.opacity = '0';
-    }
-    currentX = 0;
-});
-
-function triggerSwipe(direction) {
-    if (freshDailyPromos.length === 0 || currentIndex >= freshDailyPromos.length) return;
-    card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
-    if (direction === 'right') { card.style.transform = 'translateX(400px) rotate(30deg)'; } 
-    else { card.style.transform = 'translateX(-400px) rotate(-30deg)'; }
-    setTimeout(() => completeSwipe(direction), 250);
-}
-
-async function completeSwipe(direction) {
+async function triggerSwipe(direction) {
     currentIndex++;
     renderDeck();
-    card.style.transition = 'none';
-    card.style.transform = 'translateX(0px) rotate(0deg)';
-    document.getElementById('swipe-badge').style.opacity = '0';
-}
-
-async function executeZap() {
-    const rows = document.querySelectorAll('#ui-list .sender-item.selected');
-    const emails = Array.from(rows).map(r => r.getAttribute('data-email')).filter(e => e && e !== 'null' && e !== 'undefined');
-    if (emails.length === 0) { alert("Please select at least one sender row to zap!"); return; }
-    
-    updateTicker('Batch zapping ' + emails.length + ' targets...');
-    document.getElementById('ui-list').innerHTML = '<div class="loading-text">⚡ Executing bulk delete...</div>';
-    const r = await fetch('/api/zap', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ senders: emails }) 
-    });
-    const res = await r.json();
-    if(res.success) { alert("🎉 Success! Clean operations complete."); }
 }
 </script>
 </body>
