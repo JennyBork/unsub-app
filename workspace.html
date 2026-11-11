@@ -1,0 +1,142 @@
+<!-- Enhanced Daily Swipe Section -->
+<section id="tab-swipe" class="tab-content flex flex-col h-full justify-between relative select-none">
+    <div>
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-bold text-lg text-gray-800">Daily Swipe</h2>
+            <span id="queue-counter" class="text-xs bg-indigo-100 text-indigo-700 font-semibold px-2.5 py-1 rounded-full">3 in queue</span>
+        </div>
+        
+        <!-- Tinder Card Stack Container -->
+        <div class="relative w-full h-96 flex items-center justify-center">
+            
+            <!-- Background Card (Stack effect) -->
+            <div id="card-background" class="absolute w-full h-80 bg-white rounded-2xl shadow-md border border-gray-100 p-6 transform scale-95 translate-y-3 opacity-60"></div>
+
+            <!-- Active Draggable Swipe Card -->
+            <div id="swipe-card" 
+                 class="absolute w-full h-80 bg-white rounded-2xl shadow-xl border border-gray-100 p-6 flex flex-col justify-between cursor-grab active:cursor-grabbing transition-transform duration-200 ease-out"
+                 style="touch-action: none;">
+                
+                <!-- Card Header -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span id="sender-category" class="inline-block bg-indigo-50 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-semibold">Promotions</span>
+                        <span id="swipe-badge" class="text-xs font-bold px-2 py-0.5 rounded opacity-0 transition-opacity">ZAP</span>
+                    </div>
+                    <h3 id="sender-name" class="text-xl font-bold text-gray-900">Retail Brand Newsletter</h3>
+                    <p id="sender-email" class="text-xs text-gray-500 mt-0.5">deals@retailbrand.com</p>
+                    <p id="sender-subject" class="text-sm text-gray-600 mt-4 italic bg-gray-50 p-3 rounded-xl border border-gray-100">"⚡ 50% OFF Everything Today Only! Don't miss out..."</p>
+                </div>
+
+                <!-- Card Footer Stats -->
+                <div class="text-xs text-gray-400 flex justify-between items-center pt-3 border-t border-gray-100">
+                    <span>Avg: 12 emails/week</span>
+                    <span class="text-indigo-600 font-medium">Unsubscribe header found</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="grid grid-cols-2 gap-4 pb-4">
+        <button onclick="triggerSwipe('left')" class="py-3.5 px-4 rounded-xl border-2 border-gray-200 font-semibold text-gray-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition shadow-sm flex items-center justify-center space-x-2">
+            <span>Keep</span>
+        </button>
+        <button onclick="triggerSwipe('right')" class="py-3.5 px-4 rounded-xl bg-gradient-to-r from-red-500 to-pink-600 text-white font-semibold shadow-lg shadow-red-500/30 hover:opacity-95 transition flex items-center justify-center space-x-2">
+            <span>⚡ Zap & Unsub</span>
+        </button>
+    </div>
+</section>
+
+<!-- Interactive Swipe Script -->
+<script>
+    const card = document.getElementById('swipe-card');
+    let isDragging = false;
+    let startX = 0;
+    let currentX = 0;
+
+    // Mock Queue Data
+    const sendersQueue = [
+        { name: "Retail Brand Newsletter", email: "deals@retailbrand.com", subject: "\"⚡ 50% OFF Everything Today Only!\"", category: "Promotions" },
+        { name: "Travel Flash Deals", email: "fly@escape.com", subject: "\"✈️ Flights to Hawaii starting at $99\"", category: "Travel" },
+        { name: "Software Weekly Digest", email: "news@techapp.io", subject: "\"What's new in v4.2 release update\"", category: "Updates" }
+    ];
+    let currentIndex = 0;
+
+    // Pointer Events for Smooth Dragging (Touch + Mouse)
+    card.addEventListener('pointerdown', (e) => {
+        isDragging = true;
+        startX = e.clientX;
+        card.setPointerCapture(e.pointerId);
+        card.style.transition = 'none';
+    });
+
+    card.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        currentX = e.clientX - startX;
+        const rotation = currentX * 0.08; // Dynamic card tilt
+        card.style.transform = `translateX(${currentX}px) rotate(${rotation}deg)`;
+
+        // Visual badge feedback based on drag direction
+        const badge = document.getElementById('swipe-badge');
+        if (currentX > 40) {
+            badge.innerText = "ZAP ⚡";
+            badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-red-100 text-red-600 opacity-100 transition-opacity";
+        } else if (currentX < -40) {
+            badge.innerText = "KEEP 🛡️";
+            badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-600 opacity-100 transition-opacity";
+        } else {
+            badge.style.opacity = '0';
+        }
+    });
+
+    card.addEventListener('pointerup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        card.releasePointerCapture(e.pointerId);
+        card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+
+        if (currentX > 100) {
+            completeSwipe('right'); // Swiped right (Zap)
+        } else if (currentX < -100) {
+            completeSwipe('left');  // Swiped left (Keep)
+        } else {
+            // Snap back to center
+            card.style.transform = 'translateX(0px) rotate(0deg)';
+            document.getElementById('swipe-badge').style.opacity = '0';
+        }
+        currentX = 0;
+    });
+
+    function triggerSwipe(direction) {
+        card.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+        if (direction === 'right') {
+            card.style.transform = 'translateX(400px) rotate(30deg)';
+        } else {
+            card.style.transform = 'translateX(-400px) rotate(-30deg)';
+        }
+        setTimeout(() => completeSwipe(direction), 250);
+    }
+
+    function completeSwipe(direction) {
+        currentIndex++;
+        if (currentIndex < sendersQueue.length) {
+            const next = sendersQueue[currentIndex];
+            document.getElementById('sender-name').innerText = next.name;
+            document.getElementById('sender-email').innerText = next.email;
+            document.getElementById('sender-subject').innerText = next.subject;
+            document.getElementById('sender-category').innerText = next.category;
+            document.getElementById('queue-counter').innerText = `${sendersQueue.length - currentIndex} in queue`;
+        } else {
+            document.getElementById('sender-name').innerText = "Inbox Zero Reached! 🎉";
+            document.getElementById('sender-email').innerText = "All promotional senders processed.";
+            document.getElementById('sender-subject').innerText = "You're completely caught up.";
+            document.getElementById('sender-category').innerText = "Completed";
+        }
+        
+        // Reset card position
+        card.style.transition = 'none';
+        card.style.transform = 'translateX(0px) rotate(0deg)';
+        document.getElementById('swipe-badge').style.opacity = '0';
+    }
+</script>

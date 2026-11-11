@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsub</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; user-select: none; }
+body { background-color: #f4f7f6; color: #222; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+.app-container { background-color: #ffffff; width: 100%; max-width: 412px; height: 800px; border-radius: 32px; box-shadow: 0 12px 40px rgba(0,0,0,0.12); border: 8px solid #222; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+.app-header { padding: 20px; background: linear-gradient(135deg, #2c3e50, #34495e); color: #ffffff; text-align: center; position: relative; }
+.app-header h1 { font-size: 24px; font-weight: 700; }
+.tab-bar { display: flex; background-color: #1e293b; border-bottom: 2px solid #334155; }
+.tab-button { flex: 1; padding: 14px 5px; background: none; border: none; color: #94a3b8; font-weight: 600; font-size: 11px; cursor: pointer; transition: 0.2s; white-space: nowrap; text-transform: uppercase; }
+.tab-button.active { color: #ffffff; border-bottom: 3px solid #e74c3c; background-color: rgba(255,255,255,0.05); }
+.workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: #f8fafc; position: relative; }
+#view-list-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; width: 100%; }
+.hidden { display: none !important; }
+.live-feed-ticker { background-color: #1e293b; color: #38bdf8; font-family: monospace; font-size: 11px; padding: 8px 16px; border-bottom: 1px solid #334155; }
+.clutter-list { flex: 1; overflow-y: auto; padding: 10px 0; -webkit-overflow-scrolling: touch; }
+.sender-item { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+.custom-checkbox { width: 22px; height: 22px; border: 2px solid #cbd5e1; border-radius: 6px; margin-right: 16px; display: flex; align-items: center; justify-content: center; }
+.sender-item.selected .custom-checkbox { background-color: #e74c3c; border-color: #e74c3c; }
+.sender-item.selected .custom-checkbox::after { content: '✓'; color: white; font-weight: bold; }
+.sender-details { flex: 1; min-width: 0; }
+.sender-name { font-weight: 600; font-size: 15px; color: #1e293b; }
+.sender-email { font-size: 12px; color: #64748b; }
+.count-badge { background-color: #fee2e2; color: #ef4444; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 700; }
+.action-panel { padding: 20px; background-color: #ffffff; border-top: 1px solid #e2e8f0; width: 100%; position: relative; z-index: 10; }
+.zap-button { width: 100%; background-color: #e74c3c; color: white; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(231,76,60,0.2); }
+.deck-workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 25px 20px; overflow-y: auto; }
+.pay-workspace { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.premium-badge { background: #fef3c7; border: 1px solid #f59e0b; color: #b45309; padding: 10px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 700; }
+.price-hero { text-align: center; }
+.price-amount { font-size: 34px; font-weight: 900; color: #1e293b; }
+.price-subtitle { font-size: 12px; color: #64748b; margin-top: 2px; }
+.trust-banner { text-align: center; font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.4; }
+.loading-text { text-align: center; padding: 40px; color: #64748b; font-style: italic; font-size: 13px; line-height: 1.5; }
+.provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; width: 100%; }
+.provider-card { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 14px 6px; font-size: 13px; text-align: center; font-weight: 700; cursor: pointer; transition: 0.2s; color: #334155; width: 100%; height: 50px; display: flex; align-items: center; justify-content: center; }
+.provider-card:hover, .provider-card.selected { border-color: #2c3e50; background-color: #f8fafc; }
+.gateway-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+.gateway-modal { background: #ffffff; width: 100%; max-width: 360px; border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+</style>
+</head>
+<body><div class="app-container">
+  <div class="app-header">
+    <h1>🧼 Unsub</h1>
+    <button onclick="handleLogout()" style="position:absolute;top:20px;right:20px;background:#1e293b;color:#fff;border:none;padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🔄 Reset</button>
+  </div>
+  
+  <div class="tab-bar">
+    <button class="tab-button active" id="tab-list" onclick="switchView('list')">History Clean</button>
+    <button class="tab-button" id="tab-swipe" onclick="switchView('swipe')">Daily Swipe</button>
+    <button class="tab-button" id="tab-pay" onclick="switchView('pay')">Secure Access</button>
+  </div>
+  
+  <div class="live-feed-ticker" id="app-ticker">🤖 Status: System initialized. Zero-password onboarding active.</div>
+  
+  <div class="workspace">
+    <!-- VIEW 1: HISTORY CLEAN -->
+    <div id="view-list-container">
+      <div id="master-select-all-header" class="hidden" style="display:flex; align-items:center; padding:12px 20px; background-color:#f1f5f9; border-bottom:2px solid #e2e8f0; cursor:pointer;" onclick="toggleMasterSelectAll(this)">
+        <div class="custom-checkbox" id="master-select-all-box" style="border-color:#94a3b8;"></div>
+        <div style="font-weight:700; font-size:13px; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Select All Senders</div>
+      </div>
+      <div class="clutter-list" id="ui-list">
+        <div class="loading-text">🔒 Connect your mailbox via 'Daily Swipe' to load clutter streams.</div>
+      </div>
+      <div class="action-panel">
+        <button class="zap-button" onclick="executeZap()">⚡ Zap Selected Senders</button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: DAILY SWIPE -->
+    <div id="view-swipe-container" class="hidden deck-workspace">
+      <div id="provider-login-screen" style="width:100%; background:#ffffff; border:1px solid #e2e8f0; padding:20px; border-radius:20px; box-shadow:0 4px 6px rgba(0,0,0,0.02); text-align:center;">
+        <h3 style="font-size:16px; color:#1e293b; margin-bottom:10px;">🔌 One-Tap Secure Gateway</h3>
+        <p style="font-size:12px; color:#64748b; margin-bottom:15px; line-height:1.4;">Select your provider below. Authorized via in-app secure cloud handshake with zero password entry required.</p>
+        <div class="provider-grid">
+          <div class="provider-card" onclick="openSecureGateway('gmail', 'Google Mail')">🔴 Gmail</div>
+          <div class="provider-card" onclick="openSecureGateway('yahoo', 'Yahoo Mail')">🟣 Yahoo</div>
+          <div class="provider-card" onclick="openSecureGateway('icloud', 'Apple iCloud')">☁️ iCloud</div>
+          <div class="provider-card" onclick="openSecureGateway('outlook', 'Microsoft Outlook')">🔵 Outlook</div>
+          <div class="provider-card" onclick="openSecureGateway('aol', 'AOL Mail')">📬 AOL Mail</div>
+          <div class="provider-card" onclick="toggleImapDrawer()">🔒 Custom IMAP</div>
+        </div>
+        <!-- IMAP SSL Dropdown Tray -->
+        <div id="imap-instructions-drawer" class="hidden" style="margin-top:15px; padding:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; text-align:left;">
+          <p style="font-size:11px; font-weight:700; color:#334155; margin-bottom:8px;">Custom IMAP SSL Configuration:</p>
+          <div style="display:flex; gap:8px; margin-bottom:8px;">
+            <input type="text" id="imap-host-input" placeholder="imap.server.com" style="flex:2; padding:8px; font-size:11px; border:1px solid #cbd5e1; border-radius:6px;">
+            <input type="text" id="imap-port-input" value="993" placeholder="Port" style="flex:1; padding:8px; font-size:11px; border:1px solid #cbd5e1; border-radius:6px;">
+          </div>
+          <button onclick="openCustomImapGateway()" style="width:100%; background:#2c3e50; color:#fff; border:none; padding:10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">Authorize IMAP Gateway</button>
+        </div>
+      </div>
+
+      <!-- Tinder Deck Interface -->
+      <div id="swipe-deck-interface" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; justify-content:space-between; flex:1;">
+        <div style="width:100%;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 5px;">
+            <h2 style="font-weight:700; font-size:16px; color:#1e293b;">Daily Swipe</h2>
+            <span id="queue-counter" style="font-size:11px; background:#e0e7ff; color:#3730a3; font-weight:600; padding:4px 10px; border-radius:9999px;">0 in queue</span>
+          </div>
+          <div style="position:relative; width:100%; height:320px; display:flex; align-items:center; justify-content:center;">
+            <div id="swipe-card" style="position:absolute; width:100%; height:300px; background:#ffffff; border-radius:20px; box-shadow:0 8px 24px rgba(0,0,0,0.08); border:1px solid #e2e8f0; padding:20px; display:flex; flex-direction:column; justify-content:space-between; transition:0.3s ease;">
+              <div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                  <span id="sender-category" style="background:#e0e7ff; color:#3730a3; font-size:11px; padding:3px 8px; border-radius:6px; font-weight:600;">Promotions</span>
+                  <span id="swipe-badge" style="font-size:11px; font-weight:700; opacity:0; transition:opacity 0.2s;">ZAP</span>
+                </div>
+                <h3 id="sender-name" style="font-size:18px; font-weight:800; color:#1e293b;">Scanning Streams...</h3>
+                <p id="sender-email" style="font-size:12px; color:#64748b; margin-top:2px;">Please wait...</p>
+                <p id="sender-subject" style="font-size:13px; font-style:italic; color:#334155; margin-top:12px; background:#f8fafc; padding:10px; border-radius:8px; border-left:3px solid #cbd5e1;">"Analyzing incoming headers..."</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px; width:100%; padding:10px 0;">
+          <button onclick="triggerSwipe('right')" class="zap-button" style="background:linear-gradient(135deg, #ef4444, #dc2626); box-shadow:0 4px 12px rgba(239,68,68,0.3);">⚡ Zap & Unsub Sender</button>
+          <button onclick="triggerSwipe('left')" style="width:100%; background:#ffffff; border:2px solid #cbd5e1; color:#334155; padding:16px; border-radius:14px; font-size:16px; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.02);">❤️ Keep This Sender</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: SECURE ACCESS (STRIPE) -->
+    <div id="view-pay-container" class="hidden pay-workspace">
+      <div class="premium-badge">AUTOMATED SCRUB</div>
+      <div class="price-hero">
+        <div class="price-amount">$1.99 per month</div>
+        <div class="price-subtitle">(Automated Mailbox Cleaning Included)</div>
+      </div>
+      <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.02); display:flex; flex-direction:column; gap:12px;">
+        <p style="font-size:12px; color:#475569; line-height:1.5; text-align:left;">Unlock continuous background scanning, automatic classification of commercial newsletter streams, and priority multi-provider cloud sync. Please note: Once active, it may take 48–72 hours for your mailbox to fully clear out unwanted promo emails as cached streams process. Also includes unlimited access to the mobile Tinder-style swipe-deck maintenance dashboard.</p>
+        <button class="zap-button" style="background-color:#10b981; box-shadow:0 4px 15px rgba(16,185,129,0.3);" onclick="handlePaymentSubmit()">Subscribe Securely Via Stripe</button>
+      </div>
+      <div class="trust-banner">Billed automatically every 30 days. Cancel or manage your subscription anytime via your Jentlestay Unsubapp customer billing portal. Bank-grade 256-bit SSL encrypted checkout platform.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SECURE CLOUD GATEWAY MODAL OVERLAY -->
+<div id="gateway-modal-overlay" class="gateway-overlay hidden">
+  <div class="gateway-modal">
+    <h3 style="font-size:18px; color:#1e293b; margin-bottom:10px;">☁️ Secure Cloud Gateway</h3>
+    <p id="gateway-modal-text" style="font-size:13px; color:#64748b; margin-bottom:20px; line-height:1.4;">Connecting securely to your mail vault via encrypted token handshake.</p>
+    <div style="display:flex; gap:10px;">
+      <button onclick="closeSecureGateway()" style="flex:1; background:#f1f5f9; border:none; padding:12px; border-radius:10px; font-weight:700; color:#475569; cursor:pointer;">Cancel</button>
+      <button onclick="confirmSecureGateway()" style="flex:1; background:#10b981; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.3);">Approve Link</button>
+    </div>
+  </div>
+</div><script>
+let liveMessages = [];
+let currentIndex = 0;
+let userSessionToken = '';
+let userEmail = '';
+
+function updateTicker(t) { 
+    document.getElementById('app-ticker').innerText = '🤖 Log: ' + t; 
+}
+
+function switchView(t) {
+    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-list-container').classList.add('hidden');
+    document.getElementById('view-swipe-container').classList.add('hidden');
+    document.getElementById('view-pay-container').classList.add('hidden');
+    if(t === 'list') {
+        document.getElementById('tab-list').classList.add('active');
+        document.getElementById('view-list-container').classList.remove('hidden');
+    } else if(t === 'swipe') {
+        document.getElementById('tab-swipe').classList.add('active');
+        document.getElementById('view-swipe-container').classList.remove('hidden');
+    } else {
+        document.getElementById('tab-pay').classList.add('active');
+        document.getElementById('view-pay-container').classList.remove('hidden');
+    }
+}
+
+function toggleImapDrawer() {
+    const d = document.getElementById('imap-instructions-drawer');
+    d.classList.toggle('hidden');
+    updateTicker(d.classList.contains('hidden') ? 'Closed IMAP drawer.' : 'Opened Custom IMAP SSL settings tray.');
+}
+
+function openSecureGateway(provider, label) {
+    if (provider === 'gmail') {
+        // Open Gmail OAuth popup
+        const width = 600;
+        const height = 700;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+        
+        const popup = window.open(
+            '/auth/gmail',
+            'Gmail OAuth',
+            `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        updateTicker('Opening Gmail secure connection...');
+
+        // Listen for OAuth success message
+        const messageHandler = async (event) => {
+            if (event.data.type === 'oauth_success') {
+                userSessionToken = event.data.sessionId;
+                userEmail = event.data.email;
+                localStorage.setItem('unsub_session', userSessionToken);
+                localStorage.setItem('unsub_email', userEmail);
+                
+                updateTicker(`Connected as ${userEmail}! Loading inbox...`);
+                
+                // Hide login screen, show swipe deck
+                document.getElementById('provider-login-screen').classList.add('hidden');
+                document.getElementById('swipe-deck-interface').classList.remove('hidden');
+                
+                // Load real inbox data
+                await loadRealInboxData();
+                
+                // Remove event listener
+                window.removeEventListener('message', messageHandler);
+            } else if (event.data.type === 'oauth_error') {
+                updateTicker('Connection failed. Please try again.');
+                alert('Failed to connect. Please try again.');
+                window.removeEventListener('message', messageHandler);
+            }
+        };
+        
+        window.addEventListener('message', messageHandler);
+        
+        // Check if popup was blocked
+        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+            alert('Popup blocked! Please allow popups for this site and try again.');
+            updateTicker('Popup blocked. Please allow popups.');
+        }
+    } else {
+        alert(`${label} integration coming soon! Currently only Gmail is supported.`);
+    }
+}
+
+function openCustomImapGateway() {
+    alert('Custom IMAP integration coming soon! Please use Gmail for now.');
+}
+
+function closeSecureGateway() {
+    document.getElementById('gateway-modal-overlay').classList.add('hidden');
+}
+
+async function confirmSecureGateway() {
+    closeSecureGateway();
+}
+
+async function loadRealInboxData() {
+    try {
+        updateTicker('Fetching your promotional emails...');
+        
+        const response = await fetch('/api/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: userSessionToken })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            liveMessages = data.messages || [];
+            
+            if (liveMessages.length === 0) {
+                updateTicker('✨ Inbox is clean! No promotional emails found.');
+            } else {
+                updateTicker(`Loaded ${liveMessages.length} promotional senders from your inbox.`);
+            }
+            
+            currentIndex = 0;
+            renderDeck();
+            loadHistoryList();
+        } else {
+            updateTicker('Failed to load inbox. Please reconnect.');
+            alert('Failed to load your inbox. Please try connecting again.');
+            handleLogout();
+        }
+    } catch (err) {
+        console.error('Load Error:', err);
+        updateTicker('Connection error. Please try again.');
+        alert('Failed to load inbox. Please check your connection and try again.');
+    }
+}
+
+function loadHistoryList() {
+    const listEl = document.getElementById('ui-list');
+    document.getElementById('master-select-all-header').classList.remove('hidden');
+    listEl.innerHTML = '';
+    
+    if(liveMessages.length === 0) {
+        listEl.innerHTML = '<div class="loading-text">✨ Inbox is fully clean! No clutter found.</div>';
+        return;
+    }
+    
+    liveMessages.forEach((item) => {
+        const div = document.createElement('div');
+        div.className = 'sender-item selected';
+        div.setAttribute('data-email', item.email);
+        div.onclick = () => { div.classList.toggle('selected'); };
+        div.innerHTML = `
+            <div class="custom-checkbox"></div>
+            <div class="sender-details">
+                <div class="sender-name">${item.name}</div>
+                <div class="sender-email">${item.email} — "${item.subject}"</div>
+            </div>
+            <div class="count-badge">1</div>
+        `;
+        listEl.appendChild(div);
+    });
+}
+
+function toggleMasterSelectAll(masterRow) {
+    const isChecked = masterRow.classList.toggle('selected');
+    document.querySelectorAll('#ui-list .sender-item').forEach(row => {
+        if (isChecked) row.classList.add('selected');
+        else row.classList.remove('selected');
+    });
+    updateTicker(isChecked ? 'Selected all sender streams.' : 'Cleared selection slots.');
+}
+
+function renderDeck() {
+    if(currentIndex >= liveMessages.length) {
+        document.getElementById('sender-name').innerText = "Inbox Zero Reached! 🎉";
+        document.getElementById('sender-email').innerText = "All promotional senders processed.";
+        document.getElementById('sender-subject').innerText = "You're completely caught up.";
+        document.getElementById('sender-category').innerText = "Completed";
+        document.getElementById('queue-counter').innerText = `0 in queue`;
+        return;
+    }
+    const currentCard = liveMessages[currentIndex];
+    document.getElementById('sender-name').innerText = currentCard.name;
+    document.getElementById('sender-email').innerText = currentCard.email;
+    document.getElementById('sender-subject').innerText = `"${currentCard.subject}"`;
+    document.getElementById('queue-counter').innerText = `${liveMessages.length - currentIndex} in queue`;
+}
+
+function triggerSwipe(direction) {
+    if(currentIndex >= liveMessages.length) return;
+    const card = document.getElementById('swipe-card');
+    card.style.transform = direction === 'right' ? 'translateX(300px) rotate(20deg)' : 'translateX(-300px) rotate(-20deg)';
+    setTimeout(() => {
+        card.style.transition = 'none';
+        card.style.transform = 'translateX(0px) rotate(0deg)';
+        currentIndex++;
+        renderDeck();
+        setTimeout(() => { card.style.transition = '0.3s ease'; }, 50);
+    }, 250);
+}
+
+async function executeZap() {
+    const rows = document.querySelectorAll('#ui-list .sender-item.selected');
+    const emails = Array.from(rows).map(r => r.getAttribute('data-email'));
+    if (emails.length === 0) { 
+        alert("Please select at least one sender row to zap!"); 
+        return; 
+    }
+    
+    updateTicker(`Batch zapping ${emails.length} targets...`);
+    
+    try {
+        const response = await fetch('/api/zap', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'x-user-session': userSessionToken
+            },
+            body: JSON.stringify({ senders: emails })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(`🎉 Success! Zapped ${emails.length} promotional senders cleanly.`);
+            document.getElementById('ui-list').innerHTML = '<div class="loading-text">✨ All selected clutter purged successfully.</div>';
+            updateTicker(`Successfully zapped ${emails.length} senders.`);
+        } else {
+            alert('Failed to zap senders. Please try again.');
+            updateTicker('Zap failed. Please try again.');
+        }
+    } catch(e) {
+        console.error('Zap Error:', e);
+        alert('Failed to zap senders. Please try again.');
+        updateTicker('Zap error occurred.');
+    }
+}
+
+function handlePaymentSubmit() {
+    window.open("https://buy.stripe.com/00waEQeX27xscBscVTfAc04", '_blank');
+}
+
+function handleLogout() {
+    localStorage.removeItem('unsub_session');
+    localStorage.removeItem('unsub_email');
+    userSessionToken = '';
+    userEmail = '';
+    liveMessages = [];
+    currentIndex = 0;
+    
+    // Show login screen again
+    document.getElementById('provider-login-screen').classList.remove('hidden');
+    document.getElementById('swipe-deck-interface').classList.add('hidden');
+    document.getElementById('ui-list').innerHTML = '<div class="loading-text">🔒 Connect your mailbox via \'Daily Swipe\' to load clutter streams.</div>';
+    document.getElementById('master-select-all-header').classList.add('hidden');
+    
+    updateTicker('Disconnected. Please reconnect your mailbox.');
+    
+    // Switch to swipe tab
+    switchView('swipe');
+}
+
+// Check for existing session on page load
+window.addEventListener('DOMContentLoaded', async () => {
+    const savedSession = localStorage.getItem('unsub_session');
+    const savedEmail = localStorage.getItem('unsub_email');
+    
+    if (savedSession && savedEmail) {
+        updateTicker('Checking existing session...');
+        
+        // Verify session is still valid
+        try {
+            const response = await fetch(`/api/session/${savedSession}`);
+            const data = await response.json();
+            
+            if (data.valid) {
+                userSessionToken = savedSession;
+                userEmail = savedEmail;
+                
+                updateTicker(`Welcome back, ${userEmail}! Loading inbox...`);
+                document.getElementById('provider-login-screen').classList.add('hidden');
+                document.getElementById('swipe-deck-interface').classList.remove('hidden');
+                
+                await loadRealInboxData();
+            } else {
+                localStorage.removeItem('unsub_session');
+                localStorage.removeItem('unsub_email');
+                updateTicker('Session expired. Please reconnect.');
+            }
+        } catch (err) {
+            console.error('Session check failed:', err);
+            localStorage.removeItem('unsub_session');
+            localStorage.removeItem('unsub_email');
+            updateTicker('Please connect your mailbox.');
+        }
+    } else {
+        updateTicker('Ready. Please connect your mailbox to begin.');
+    }
+});
+</script>
+</body>
+</html>!DOCTYPE html>
