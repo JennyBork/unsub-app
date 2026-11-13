@@ -2,6 +2,7 @@ const express = require('express');
 const { ImapFlow } = require('imapflow');
 const { google } = require('googleapis');
 const session = require('express-session');
+const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -14,7 +15,8 @@ const GMAIL_REDIRECT_URI = process.env.GMAIL_REDIRECT_URI || 'https://unsub-app-
 
 const AZURE_CLIENT_ID = process.env.AZURE_CLIENT_ID;
 const AZURE_CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET;
-const AZURE_TENANT_ID = process.env.AZURE_TENANT_ID;
+const AZURE_TENANT_ID = process.env.AZURE_TENANT_ID || 'common';
+const AZURE_REDIRECT_URI = process.env.AZURE_REDIRECT_URI || 'https://unsub-app-w0c7.onrender.com/auth/microsoft/callback';
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'unsub-secret-key-change-this-in-production';
 
@@ -70,19 +72,7 @@ app.get('/auth/google/callback', async (req, res) => {
     const { code } = req.query;
     
     if (!code) {
-        return res.send(`
-            <html>
-                <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f7f6;">
-                    <div style="text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                        <h2 style="color: #ef4444; margin-bottom: 10px;">❌ Authentication Failed</h2>
-                        <p style="color: #64748b;">No authorization code received.</p>
-                        <script>
-                            setTimeout(() => window.close(), 3000);
-                        </script>
-                    </div>
-                </body>
-            </html>
-        `);
+        return res.send(errorHtml('No authorization code received.'));
     }
     
     try {
@@ -102,118 +92,123 @@ app.get('/auth/google/callback', async (req, res) => {
         };
 
         console.log(`✅ New Gmail connection: ${email} (Session: ${sessionId})`);
-
-        res.send(`
-            <html>
-                <head>
-                    <style>
-                        body {
-                            font-family: system-ui, -apple-system, sans-serif;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            height: 100vh;
-                            margin: 0;
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        }
-                        .success-card {
-                            text-align: center;
-                            background: white;
-                            padding: 40px;
-                            border-radius: 20px;
-                            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-                            max-width: 400px;
-                        }
-                        .checkmark {
-                            width: 80px;
-                            height: 80px;
-                            border-radius: 50%;
-                            display: block;
-                            stroke-width: 2;
-                            stroke: #10b981;
-                            stroke-miterlimit: 10;
-                            margin: 0 auto 20px;
-                            animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
-                        }
-                        .checkmark-circle {
-                            stroke-dasharray: 166;
-                            stroke-dashoffset: 166;
-                            stroke-width: 2;
-                            stroke-miterlimit: 10;
-                            stroke: #10b981;
-                            fill: none;
-                            animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
-                        }
-                        .checkmark-check {
-                            transform-origin: 50% 50%;
-                            stroke-dasharray: 48;
-                            stroke-dashoffset: 48;
-                            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
-                        }
-                        @keyframes stroke {
-                            100% { stroke-dashoffset: 0; }
-                        }
-                        @keyframes scale {
-                            0%, 100% { transform: none; }
-                            50% { transform: scale3d(1.1, 1.1, 1); }
-                        }
-                        @keyframes fill {
-                            100% { box-shadow: inset 0px 0px 0px 30px #10b981; }
-                        }
-                        h2 { color: #1e293b; margin-bottom: 10px; }
-                        p { color: #64748b; margin-bottom: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="success-card">
-                        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                        </svg>
-                        <h2>✅ Connected Successfully!</h2>
-                        <p><strong>${email}</strong></p>
-                        <p>You can close this window now.</p>
-                    </div>
-                    <script>
-                        if (window.opener) {
-                            window.opener.postMessage({
-                                type: 'oauth_success',
-                                sessionId: '${sessionId}',
-                                email: '${email}',
-                                provider: 'gmail'
-                            }, '*');
-                            setTimeout(() => window.close(), 2000);
-                        } else {
-                            window.location.href = '/?session=${sessionId}';
-                        }
-                    </script>
-                </body>
-            </html>
-        `);
+        res.send(successHtml(email, sessionId, 'gmail'));
     } catch (error) {
         console.error('OAuth Error:', error);
-        res.send(`
-            <html>
-                <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f7f6;">
-                    <div style="text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                        <h2 style="color: #ef4444; margin-bottom: 10px;">❌ Connection Failed</h2>
-                        <p style="color: #64748b; margin-bottom: 20px;">${error.message}</p>
-                        <p style="color: #94a3b8; font-size: 12px;">Please try again.</p>
-                    </div>
-                    <script>
-                        if (window.opener) {
-                            window.opener.postMessage({
-                                type: 'oauth_error',
-                                error: '${error.message}'
-                            }, '*');
-                            setTimeout(() => window.close(), 3000);
-                        }
-                    </script>
-                </body>
-            </html>
-        `);
+        res.send(errorHtml(error.message));
     }
 });
+
+// ============================================
+// MICROSOFT (OUTLOOK / AZURE) OAUTH FLOW
+// ============================================
+
+app.get('/auth/microsoft', (req, res) => {
+    const microsoftAuthUrl = `https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/authorize?` +
+        `client_id=${AZURE_CLIENT_ID}` +
+        `&response_type=code` +
+        `&redirect_uri=${encodeURIComponent(AZURE_REDIRECT_URI)}` +
+        `&response_mode=query` +
+        `&scope=${encodeURIComponent('openid profile email offline_access Mail.ReadWrite')}`;
+    
+    res.redirect(microsoftAuthUrl);
+});
+
+app.get('/auth/microsoft/callback', async (req, res) => {
+    const { code } = req.query;
+
+    if (!code) {
+        return res.send(errorHtml('No authorization code received from Microsoft.'));
+    }
+
+    try {
+        const tokenResponse = await axios.post(`https://login.microsoftonline.com/${AZURE_TENANT_ID}/oauth2/v2.0/token`, new URLSearchParams({
+            client_id: AZURE_CLIENT_ID,
+            client_secret: AZURE_CLIENT_SECRET,
+            code: code,
+            redirect_uri: AZURE_REDIRECT_URI,
+            grant_type: 'authorization_code'
+        }), {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+
+        const accessToken = tokenResponse.data.access_token;
+        const refreshToken = tokenResponse.data.refresh_token;
+
+        const userResponse = await axios.get('https://graph.microsoft.com/v1.0/me', {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        const email = userResponse.data.mail || userResponse.data.userPrincipalName;
+
+        const sessionId = 'sess_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+        activeSessions[sessionId] = {
+            provider: 'microsoft',
+            email: email,
+            tokens: { access_token: accessToken, refresh_token: refreshToken },
+            createdAt: Date.now()
+        };
+
+        console.log(`✅ New Microsoft connection: ${email} (Session: ${sessionId})`);
+        res.send(successHtml(email, sessionId, 'microsoft'));
+    } catch (error) {
+        console.error('Microsoft OAuth Error:', error.response?.data || error.message);
+        res.send(errorHtml('Microsoft Authentication failed: ' + (error.response?.data?.error_description || error.message)));
+    }
+});
+
+// ============================================
+// HTML TEMPLATES FOR OAUTH REDIRECTS
+// ============================================
+
+function successHtml(email, sessionId, provider) {
+    return `
+        <html>
+            <head>
+                <style>
+                    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+                    .success-card { text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); max-width: 400px; }
+                    h2 { color: #1e293b; margin-bottom: 10px; }
+                    p { color: #64748b; margin-bottom: 20px; }
+                </style>
+            </head>
+            <body>
+                <div class="success-card">
+                    <h2>✅ Connected Successfully!</h2>
+                    <p><strong>${email}</strong></p>
+                    <p>You can close this window now.</p>
+                </div>
+                <script>
+                    if (window.opener) {
+                        window.opener.postMessage({
+                            type: 'oauth_success',
+                            sessionId: '${sessionId}',
+                            email: '${email}',
+                            provider: '${provider}'
+                        }, '*');
+                        setTimeout(() => window.close(), 2000);
+                    } else {
+                        window.location.href = '/?session=${sessionId}';
+                    }
+                </script>
+            </body>
+        </html>
+    `;
+}
+
+function errorHtml(message) {
+    return `
+        <html>
+            <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f7f6;">
+                <div style="text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <h2 style="color: #ef4444; margin-bottom: 10px;">❌ Connection Failed</h2>
+                    <p style="color: #64748b; margin-bottom: 20px;">${message}</p>
+                </div>
+            </body>
+        </html>
+    `;
+}
+
 // ============================================
 // FETCH PROMOTIONAL EMAILS FROM USER'S INBOX
 // ============================================
@@ -222,21 +217,16 @@ app.post('/api/connect', async (req, res) => {
     const { sessionId } = req.body;
     
     if (!sessionId || !activeSessions[sessionId]) {
-        return res.status(401).json({ 
-            success: false, 
-            message: 'Not authenticated. Please connect your email first.' 
-        });
+        return res.status(401).json({ success: false, message: 'Not authenticated.' });
     }
 
-    const session = activeSessions[sessionId];
+    const sessionData = activeSessions[sessionId];
 
     try {
-        if (session.provider === 'gmail') {
-            // Set credentials for this session
-            oauth2Client.setCredentials(session.tokens);
+        if (sessionData.provider === 'gmail') {
+            oauth2Client.setCredentials(sessionData.tokens);
             const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
 
-            // Search for promotional emails
             const response = await gmail.users.messages.list({
                 userId: 'me',
                 q: 'category:promotions',
@@ -244,15 +234,9 @@ app.post('/api/connect', async (req, res) => {
             });
 
             if (!response.data.messages || response.data.messages.length === 0) {
-                return res.json({ 
-                    success: true, 
-                    session: sessionId,
-                    messages: [],
-                    email: session.email
-                });
+                return res.json({ success: true, session: sessionId, messages: [], email: sessionData.email });
             }
 
-            // Fetch details for each message
             const messages = await Promise.all(
                 response.data.messages.map(async (msg) => {
                     try {
@@ -266,128 +250,43 @@ app.post('/api/connect', async (req, res) => {
                         const from = details.data.payload.headers.find(h => h.name === 'From')?.value || '';
                         const subject = details.data.payload.headers.find(h => h.name === 'Subject')?.value || 'No Subject';
                         
-                        // Parse "Name <email@domain.com>" format
                         const emailMatch = from.match(/<(.+?)>/);
                         const senderEmail = emailMatch ? emailMatch[1] : from;
                         const senderName = from.split('<')[0].trim().replace(/"/g, '') || senderEmail;
 
-                        return {
-                            id: msg.id,
-                            name: senderName,
-                            email: senderEmail,
-                            subject: subject,
-                            category: 'Promotions'
-                        };
+                        return { id: msg.id, name: senderName, email: senderEmail, subject: subject, category: 'Promotions' };
                     } catch (err) {
-                        console.error('Error fetching message details:', err);
                         return null;
                     }
                 })
             );
 
-            // Filter out any null results
-            const validMessages = messages.filter(m => m !== null);
-
-            console.log(`📧 Loaded ${validMessages.length} promotional emails for ${session.email}`);
-
-            res.json({ 
-                success: true, 
-                session: sessionId,
-                messages: validMessages,
-                email: session.email
+            res.json({ success: true, session: sessionId, messages: messages.filter(m => m !== null), email: sessionData.email });
+        } else if (sessionData.provider === 'microsoft') {
+            const response = await axios.get('https://graph.microsoft.com/v1.0/me/messages?$filter=categories/any(c:c eq \'Promotions\') or contains(subject, \'sale\')&$top=50', {
+                headers: { Authorization: `Bearer ${sessionData.tokens.access_token}` }
             });
+
+            const messages = response.data.value.map(msg => ({
+                id: msg.id,
+                name: msg.sender?.emailAddress?.name || 'Unknown',
+                email: msg.sender?.emailAddress?.address || '',
+                subject: msg.subject || 'No Subject',
+                category: 'Promotions'
+            }));
+
+            res.json({ success: true, session: sessionId, messages, email: sessionData.email });
         } else {
-            res.status(400).json({ 
-                success: false, 
-                message: 'Provider not supported yet. Currently only Gmail is available.' 
-            });
+            res.status(400).json({ success: false, message: 'Provider not supported.' });
         }
     } catch (error) {
         console.error('Fetch Error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to fetch emails: ' + error.message 
-        });
+        res.status(500).json({ success: false, message: 'Failed to fetch emails: ' + error.message });
     }
 });
 
 // ============================================
-// UNSUBSCRIBE/ZAP SENDERS
-// ============================================
-
-app.post('/api/zap', async (req, res) => {
-    const { senders } = req.body;
-    const sessionId = req.headers['x-user-session'];
-    
-    if (!sessionId || !activeSessions[sessionId]) {
-        return res.status(401).json({ 
-            success: false, 
-            message: 'Not authenticated' 
-        });
-    }
-
-    const session = activeSessions[sessionId];
-
-    try {
-        // TODO: Implement actual unsubscribe logic here
-        // This could involve:
-        // 1. Finding unsubscribe links in email headers
-        // 2. Making HTTP requests to unsubscribe endpoints
-        // 3. Sending unsubscribe emails
-        // 4. Using Gmail API to modify labels/filters
-        
-        console.log(`⚡ Zapping ${senders.length} senders for ${session.email}:`, senders);
-
-        // For now, just log and return success
-        res.json({ 
-            success: true, 
-            count: senders ? senders.length : 0,
-            message: `Successfully processed ${senders.length} unsubscribe requests`
-        });
-    } catch (error) {
-        console.error('Zap Error:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to process unsubscribe requests' 
-        });
-    }
-});
-// ============================================
-// SESSION VALIDATION
-// ============================================
-
-app.get('/api/session/:sessionId', (req, res) => {
-    const { sessionId } = req.params;
-    const session = activeSessions[sessionId];
-    
-    if (session) {
-        res.json({ 
-            valid: true, 
-            email: session.email,
-            provider: session.provider
-        });
-    } else {
-        res.json({ valid: false });
-    }
-});
-
-// ============================================
-// STRIPE PAYMENT ENDPOINT (Optional - for future use)
-// ============================================
-
-app.post('/api/create-checkout-session', async (req, res) => {
-    // This is a placeholder for Stripe integration
-    // Your current setup uses a direct Stripe payment link, which is fine
-    // If you want to create dynamic checkout sessions, you can add that here
-    
-    res.json({ 
-        message: 'Using direct Stripe payment link',
-        url: 'https://buy.stripe.com/00waEQeX27xscBscVTfAc04'
-    });
-});
-
-// ============================================
-// HEALTH CHECK
+// HEALTH CHECK & START SERVER
 // ============================================
 
 app.get('/health', (req, res) => {
@@ -399,25 +298,8 @@ app.get('/health', (req, res) => {
         azureConfigured: !!AZURE_CLIENT_ID
     });
 });
-// ============================================
-// START SERVER
-// ============================================
 
 app.listen(PORT, () => {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log(`🧼 Unsub Backend Server`);
-    console.log(`🚀 Running on port ${PORT}`);
+    console.log(`🚀 Unsub Backend Running on port ${PORT}`);
     console.log(`🌐 https://unsub-app-w0c7.onrender.com`);
-    console.log(`📧 Gmail OAuth: ${GMAIL_CLIENT_ID ? 'Configured ✅' : 'Not configured ⚠️'}`);
-    console.log(`📧 Azure OAuth: ${AZURE_CLIENT_ID ? 'Configured ✅' : 'Not configured ⚠️'}`);
-    console.log(`🔐 Session Secret: ${SESSION_SECRET ? 'Set ✅' : 'Not set ⚠️'}`);
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
-    app.close(() => {
-        console.log('HTTP server closed');
-    });
 });
