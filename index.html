@@ -79,11 +79,11 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
         <p style="font-size:12px; color:#64748b; margin-bottom:15px; line-height:1.4;">Select your provider below. Authorized via in-app secure cloud handshake with zero password entry required.</p>
         <div class="provider-grid">
           <div class="provider-card" onclick="openSecureGateway('gmail', 'Google Mail')">🔴 Gmail</div>
-          <div class="provider-card" onclick="openSecureGateway('yahoo', 'Yahoo Mail')">🟣 Yahoo</div>
-          <div class="provider-card" onclick="openSecureGateway('icloud', 'Apple iCloud')">☁️ iCloud</div>
-          <div class="provider-card" onclick="openSecureGateway('outlook', 'Microsoft Outlook')">🔵 Outlook</div>
-          <div class="provider-card" onclick="openSecureGateway('aol', 'AOL Mail')">📬 AOL Mail</div>
-          <div class="provider-card" onclick="toggleImapDrawer()">🔒 Custom IMAP</div>
+          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('yahoo', 'Yahoo Mail')">🟣 Yahoo <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
+          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('icloud', 'Apple iCloud')">☁️ iCloud <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
+          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('outlook', 'Microsoft Outlook')">🔵 Outlook <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
+          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('aol', 'AOL Mail')">📬 AOL <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
+          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('imap', 'Custom IMAP')">🔒 IMAP <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
         </div>
         <!-- IMAP SSL Dropdown Tray -->
         <div id="imap-instructions-drawer" class="hidden" style="margin-top:15px; padding:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; text-align:left;">
@@ -201,6 +201,8 @@ function openSecureGateway(provider, label) {
 
         // Listen for OAuth success message
         const messageHandler = async (event) => {
+            // Only trust messages that come from our own site
+            if (event.origin !== window.location.origin || !event.data) return;
             if (event.data.type === 'oauth_success') {
                 userSessionToken = event.data.sessionId;
                 userEmail = event.data.email;
@@ -295,7 +297,15 @@ function loadHistoryList() {
         return;
     }
     
+    // One row per sender (zapping a sender clears all of their promos)
+    const bySender = new Map();
     liveMessages.forEach((item) => {
+        const key = item.email.toLowerCase();
+        if (bySender.has(key)) { bySender.get(key).count++; }
+        else { bySender.set(key, { item: item, count: 1 }); }
+    });
+
+    bySender.forEach(({ item, count }) => {
         const div = document.createElement('div');
         div.className = 'sender-item selected';
         div.setAttribute('data-email', item.email);
@@ -303,11 +313,15 @@ function loadHistoryList() {
         div.innerHTML = `
             <div class="custom-checkbox"></div>
             <div class="sender-details">
-                <div class="sender-name">${item.name}</div>
-                <div class="sender-email">${item.email} — "${item.subject}"</div>
+                <div class="sender-name"></div>
+                <div class="sender-email"></div>
             </div>
-            <div class="count-badge">1</div>
+            <div class="count-badge"></div>
         `;
+        // textContent keeps email text from ever running as code
+        div.querySelector('.sender-name').textContent = item.name;
+        div.querySelector('.sender-email').textContent = item.email + ' — "' + item.subject + '"';
+        div.querySelector('.count-badge').textContent = count;
         listEl.appendChild(div);
     });
 }
@@ -339,6 +353,19 @@ function renderDeck() {
 
 function triggerSwipe(direction) {
     if(currentIndex >= liveMessages.length) return;
+
+    // Swipe right = Zap: actually send this sender to the server
+    if (direction === 'right') {
+        const senderToZap = liveMessages[currentIndex].email;
+        fetch('/api/zap', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken },
+            body: JSON.stringify({ senders: [senderToZap] })
+        }).then(r => r.json()).then(d => {
+            updateTicker(d.success ? ('Zapped ' + senderToZap) : 'Zap failed. Please try again.');
+        }).catch(() => updateTicker('Zap error occurred.'));
+    }
+
     const card = document.getElementById('swipe-card');
     card.style.transform = direction === 'right' ? 'translateX(300px) rotate(20deg)' : 'translateX(-300px) rotate(-20deg)';
     setTimeout(() => {
@@ -373,7 +400,7 @@ async function executeZap() {
         const data = await response.json();
         
         if (data.success) {
-            alert(`🎉 Success! Zapped ${emails.length} promotional senders cleanly.`);
+            alert(`🎉 Success! ${data.message || ('Zapped ' + emails.length + ' senders.')}`);
             document.getElementById('ui-list').innerHTML = '<div class="loading-text">✨ All selected clutter purged successfully.</div>';
             updateTicker(`Successfully zapped ${emails.length} senders.`);
         } else {
@@ -450,4 +477,4 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 </script>
 </body>
-</html>!DOCTYPE html>
+</html>
