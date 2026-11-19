@@ -90,6 +90,11 @@ function jsValue(value) {
     return JSON.stringify(value).replace(/</g, '\\u003c');
 }
 
+// Which emails the app works on: Promotions + Updates tabs, only with an unsubscribe link.
+// Used for BOTH the scan and the zap, so zapping never touches a sender's receipts etc.
+const MAILING_LIST_QUERY = '{category:promotions category:updates} unsubscribe';
+const MAX_SCAN = 500; // how many recent emails to scan
+
 // Store active sessions
 const activeSessions = {};
 
@@ -378,14 +383,23 @@ app.post('/api/connect', async (req, res) => {
             client.setCredentials(userSession.tokens);
             const gmail = google.gmail({ version: 'v1', auth: client });
 
-            // Search for promotional emails
-            const response = await gmail.users.messages.list({
-                userId: 'me',
-                q: 'category:promotions',
-                maxResults: 50
-            });
+            // Find mailing-list emails: Promotions + Updates tabs, but ONLY ones
+            // that contain an unsubscribe link (skips receipts, bank alerts, etc.)
+            const ids = [];
+            let pageToken;
+            do {
+                const page = await gmail.users.messages.list({
+                    userId: 'me',
+                    q: MAILING_LIST_QUERY,
+                    maxResults: 500,
+                    pageToken: pageToken
+                });
+                (page.data.messages || []).forEach(m => ids.push(m.id));
+                pageToken = page.data.nextPageToken;
+            } while (pageToken && ids.length < MAX_SCAN);
+            ids.length = Math.min(ids.length, MAX_SCAN);
 
-            if (!response.data.messages || response.data.messages.length === 0) {
+            if (ids.length === 0) {
                 return res.json({
                     success: true,
                     session: sessionId,
@@ -394,43 +408,54 @@ app.post('/api/connect', async (req, res) => {
                 });
             }
 
-            // Fetch details for each message
-            const messages = await Promise.all(
-                response.data.messages.map(async (msg) => {
-                    try {
-                        const details = await gmail.users.messages.get({
-                            userId: 'me',
-                            id: msg.id,
-                            format: 'metadata',
-                            metadataHeaders: ['From', 'Subject']
-                        });
+            // Fetch sender + subject for each email, 20 at a time (stays under Gmail's speed limits)
+            const fetchOne = async (id, retry = true) => {
+                try {
+                    const details = await gmail.users.messages.get({
+                        userId: 'me',
+                        id: id,
+                        format: 'metadata',
+                        metadataHeaders: ['From', 'Subject']
+                    });
 
-                        const from = details.data.payload.headers.find(h => h.name === 'From')?.value || '';
-                        const subject = details.data.payload.headers.find(h => h.name === 'Subject')?.value || 'No Subject';
+                    const headers = details.data.payload.headers || [];
+                    const from = headers.find(h => h.name === 'From')?.value || '';
+                    const subject = headers.find(h => h.name === 'Subject')?.value || 'No Subject';
+                    const labels = details.data.labelIds || [];
 
-                        // Parse "Name <email@domain.com>" format
-                        const emailMatch = from.match(/<(.+?)>/);
-                        const senderEmail = emailMatch ? emailMatch[1] : from;
-                        const senderName = from.split('<')[0].trim().replace(/"/g, '') || senderEmail;
+                    // Parse "Name <email@domain.com>" format
+                    const emailMatch = from.match(/<(.+?)>/);
+                    const senderEmail = (emailMatch ? emailMatch[1] : from).trim();
+                    const senderName = from.split('<')[0].trim().replace(/"/g, '') || senderEmail;
 
-                        return {
-                            id: msg.id,
-                            name: senderName,
-                            email: senderEmail,
-                            subject: subject,
-                            category: 'Promotions'
-                        };
-                    } catch (err) {
-                        console.error('Error fetching message details:', err);
-                        return null;
+                    return {
+                        id: id,
+                        name: senderName,
+                        email: senderEmail,
+                        subject: subject,
+                        category: labels.includes('CATEGORY_UPDATES') ? 'Updates' : 'Promotions'
+                    };
+                } catch (err) {
+                    const code = err.code || (err.response && err.response.status);
+                    if (retry && (code === 429 || code === 403)) {
+                        await new Promise(r => setTimeout(r, 1500));
+                        return fetchOne(id, false);
                     }
-                })
-            );
+                    console.error('Error fetching message details:', err.message);
+                    return null;
+                }
+            };
+
+            const messages = [];
+            for (let i = 0; i < ids.length; i += 20) {
+                const chunk = await Promise.all(ids.slice(i, i + 20).map(id => fetchOne(id)));
+                messages.push(...chunk);
+            }
 
             // Filter out any null results
             const validMessages = messages.filter(m => m !== null);
 
-            console.log(`📧 Loaded ${validMessages.length} promotional emails for ${userSession.email}`);
+            console.log(`📧 Loaded ${validMessages.length} mailing-list emails for ${userSession.email}`);
 
             res.json({
                 success: true,
@@ -499,13 +524,13 @@ app.post('/api/zap', async (req, res) => {
             // Only accept plain email addresses (blocks search-operator tricks)
             if (typeof sender !== 'string' || !/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+$/.test(sender)) continue;
 
-            // Find EVERY promotional email from this sender (not just the ones shown on screen)
+            // Find EVERY mailing-list email from this sender (not just the ones shown on screen)
             const ids = [];
             let pageToken;
             do {
                 const page = await gmail.users.messages.list({
                     userId: 'me',
-                    q: `from:${sender} category:promotions`,
+                    q: `from:${sender} ${MAILING_LIST_QUERY}`,
                     maxResults: 500,
                     pageToken: pageToken
                 });

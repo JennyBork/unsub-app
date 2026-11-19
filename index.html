@@ -154,6 +154,7 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
   </div>
 </div><script>
 let liveMessages = [];
+let swipeDeck = []; // one card per sender
 let currentIndex = 0;
 let userSessionToken = '';
 let userEmail = '';
@@ -209,7 +210,7 @@ async function confirmSecureGateway() {
 
 async function loadRealInboxData() {
     try {
-        updateTicker('Fetching your promotional emails...');
+        updateTicker('Scanning your recent emails for mailing lists... (this can take a few seconds)');
         
         const response = await fetch('/api/connect', {
             method: 'POST',
@@ -240,11 +241,13 @@ async function loadRealInboxData() {
             liveMessages = data.messages || [];
             
             if (liveMessages.length === 0) {
-                updateTicker('✨ Inbox is clean! No promotional emails found.');
+                updateTicker('✨ Inbox is clean! No mailing-list emails found.');
             } else {
-                updateTicker(`Loaded ${liveMessages.length} promotional senders from your inbox.`);
+                const senderCount = new Set(liveMessages.map(m => m.email.toLowerCase())).size;
+                updateTicker(`Found ${senderCount} mailing-list senders (${liveMessages.length} emails).`);
             }
             
+            buildSwipeDeck();
             currentIndex = 0;
             renderDeck();
             loadHistoryList();
@@ -309,35 +312,48 @@ function toggleMasterSelectAll(masterRow) {
     updateTicker(isChecked ? 'Selected all sender streams.' : 'Cleared selection slots.');
 }
 
+// Group emails so each sender appears once in Daily Swipe (newest email first)
+function buildSwipeDeck() {
+    const bySender = new Map();
+    liveMessages.forEach((item) => {
+        const key = item.email.toLowerCase();
+        if (bySender.has(key)) bySender.get(key).count++;
+        else bySender.set(key, { ...item, count: 1 });
+    });
+    swipeDeck = Array.from(bySender.values());
+}
+
 function renderDeck() {
-    if(currentIndex >= liveMessages.length) {
+    if(currentIndex >= swipeDeck.length) {
         document.getElementById('sender-name').innerText = "Inbox Zero Reached! 🎉";
-        document.getElementById('sender-email').innerText = "All promotional senders processed.";
+        document.getElementById('sender-email').innerText = "All mailing-list senders processed.";
         document.getElementById('sender-subject').innerText = "You're completely caught up.";
         document.getElementById('sender-category').innerText = "Completed";
         document.getElementById('queue-counter').innerText = `0 in queue`;
         return;
     }
-    const currentCard = liveMessages[currentIndex];
+    const currentCard = swipeDeck[currentIndex];
+    document.getElementById('sender-category').innerText = currentCard.category || 'Promotions';
     document.getElementById('sender-name').innerText = currentCard.name;
-    document.getElementById('sender-email').innerText = currentCard.email;
+    document.getElementById('sender-email').innerText = currentCard.email +
+        (currentCard.count > 1 ? ` · ${currentCard.count} emails` : '');
     document.getElementById('sender-subject').innerText = `"${currentCard.subject}"`;
-    document.getElementById('queue-counter').innerText = `${liveMessages.length - currentIndex} in queue`;
+    document.getElementById('queue-counter').innerText = `${swipeDeck.length - currentIndex} in queue`;
 }
 
 function triggerSwipe(direction) {
-    if(currentIndex >= liveMessages.length) return;
+    if(currentIndex >= swipeDeck.length) return;
 
     // Swipe right = Zap: actually send this sender to the server
     if (direction === 'right') {
-        const senderToZap = liveMessages[currentIndex].email;
+        const senderToZap = swipeDeck[currentIndex].email;
         fetch('/api/zap', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken },
             body: JSON.stringify({ senders: [senderToZap] })
         }).then(r => r.json()).then(d => {
             if (d.needsPayment) { showPaywall(); return; }
-            updateTicker(d.success ? ('Zapped ' + senderToZap) : 'Zap failed. Please try again.');
+            updateTicker(d.success ? (`Zapped ${senderToZap} (${d.trashed} emails moved to Trash)`) : 'Zap failed. Please try again.');
         }).catch(() => updateTicker('Zap error occurred.'));
     }
 
@@ -407,6 +423,7 @@ function setPaidUI(paid) {
 
 function showPaywall() {
     liveMessages = [];
+    swipeDeck = [];
     currentIndex = 0;
     document.getElementById('sender-name').innerText = '🔒 Subscription required';
     document.getElementById('sender-email').innerText = 'Subscribe for $1.99/month to start cleaning.';
@@ -496,6 +513,7 @@ function handleLogout() {
     userSessionToken = '';
     userEmail = '';
     liveMessages = [];
+    swipeDeck = [];
     currentIndex = 0;
     
     // Show login screen again
