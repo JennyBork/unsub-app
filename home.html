@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsub – Unsubscribe from mailing lists and clean your Gmail in one tap</title>
+<meta name="description" content="Unsub finds the mailing lists cluttering your Gmail, unsubscribes you, and clears out their old emails in one tap. $1.99 per month, cancel anytime.">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #1e293b; background: #f4f7f6; line-height: 1.6; }
+a { color: #2563eb; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+
+header.top { background: linear-gradient(135deg, #2c3e50, #34495e); color: #fff; }
+nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+.brand { font-size: 22px; font-weight: 800; color: #fff; text-decoration: none; }
+.nav-links a { color: #cbd5e1; text-decoration: none; font-size: 14px; margin-left: 20px; }
+.nav-links a:hover { color: #fff; }
+
+.hero { padding: 56px 0 72px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 48px; align-items: center; }
+.hero h1 { font-size: 44px; line-height: 1.1; font-weight: 800; letter-spacing: -0.5px; }
+.hero h1 span { color: #fca5a5; }
+.hero p { font-size: 18px; color: #cbd5e1; margin: 18px 0 28px; max-width: 520px; }
+.cta { display: inline-block; background: #e74c3c; color: #fff; text-decoration: none; font-weight: 700; font-size: 17px; padding: 15px 28px; border-radius: 14px; box-shadow: 0 6px 18px rgba(231,76,60,0.35); }
+.cta:hover { background: #d63c2c; }
+.cta-note { display: block; font-size: 13px; color: #94a3b8; margin-top: 12px; }
+
+.mock { background: #fff; border: 8px solid #111827; border-radius: 30px; padding: 18px; color: #1e293b; box-shadow: 0 20px 50px rgba(0,0,0,0.35); max-width: 320px; justify-self: center; width: 100%; }
+.mock .log { background: #1e293b; color: #38bdf8; font-family: monospace; font-size: 11px; padding: 8px 10px; border-radius: 8px; margin-bottom: 12px; }
+.mock .card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px; }
+.mock .tag { display: inline-block; background: #e0e7ff; color: #3730a3; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+.mock .name { font-weight: 800; font-size: 17px; margin-top: 8px; }
+.mock .meta { font-size: 12px; color: #64748b; }
+.mock .ok { color: #059669; font-weight: 600; }
+.mock .btn { margin-top: 12px; background: #e74c3c; color: #fff; text-align: center; font-weight: 700; padding: 11px; border-radius: 12px; font-size: 14px; }
+
+section { padding: 64px 0; }
+section h2 { font-size: 30px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.3px; }
+.lead { color: #475569; font-size: 17px; margin-bottom: 32px; max-width: 640px; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; counter-reset: step; }
+.step { background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 24px; }
+.step::before { counter-increment: step; content: counter(step); display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #e74c3c; color: #fff; font-weight: 800; margin-bottom: 12px; }
+.step h3 { font-size: 18px; margin-bottom: 6px; }
+.step p { color: #475569; font-size: 15px; }
+
+.white { background: #fff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+.two ul { list-style: none; }
+.two li { padding: 10px 0 10px 30px; position: relative; color: #334155; border-bottom: 1px solid #f1f5f9; }
+.two li::before { content: "✓"; position: absolute; left: 0; color: #10b981; font-weight: 800; }
+.two li.no::before { content: "✕"; color: #ef4444; }
+
+.price { background: #fff; border: 2px solid #1e293b; border-radius: 22px; padding: 32px; max-width: 460px; text-align: center; margin: 0 auto; }
+.price .amount { font-size: 46px; font-weight: 900; }
+.price .amount small { font-size: 18px; font-weight: 600; color: #64748b; }
+.price p { color: #475569; margin: 8px 0 22px; }
+
+footer { background: #1e293b; color: #94a3b8; padding: 32px 0; font-size: 14px; }
+footer .row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+footer a { color: #cbd5e1; text-decoration: none; margin-right: 18px; }
+footer a:hover { color: #fff; }
+
+@media (max-width: 780px) {
+  .hero { grid-template-columns: 1fr; padding: 32px 0 56px; }
+  .hero h1 { font-size: 34px; }
+  .steps, .two { grid-template-columns: 1fr; }
+  .nav-links a.hide-sm { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="/">🧼 Unsub</a>
+      <div class="nav-links">
+        <a class="hide-sm" href="#how">How it works</a>
+        <a class="hide-sm" href="#privacy">Your privacy</a>
+        <a href="https://app.appunsub.com">Open the app</a>
+      </div>
+    </nav>
+    <div class="hero">
+      <div>
+        <h1>Unsubscribe from the clutter. <span>Clear your inbox in one tap.</span></h1>
+        <p>Unsub finds the mailing lists filling up your Gmail, unsubscribes you from the ones you don't want, and moves their old emails to Trash, often hundreds at once.</p>
+        <a class="cta" href="https://app.appunsub.com">Get started with Gmail</a>
+        <span class="cta-note">$1.99 per month · Cancel anytime · Works with Gmail</span>
+      </div>
+      <div class="mock" aria-hidden="true">
+        <div class="log">Found 41 mailing-list senders (424 emails)</div>
+        <div class="card">
+          <span class="tag">Promotions</span>
+          <div class="name">Example Store</div>
+          <div class="meta">deals@example-store.com</div>
+          <div class="meta">86 emails · <span class="ok">✓ Auto-unsubscribe available</span></div>
+          <div class="btn">⚡ Zap &amp; Unsub Sender</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="how">
+  <div class="wrap">
+    <h2>How Unsub works</h2>
+    <p class="lead">Nothing happens to your email unless you choose a sender and tap Zap.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Connect Gmail</h3>
+        <p>Sign in with Google. No password to create. Unsub scans your recent emails in Gmail's Promotions and Updates tabs for messages that contain an unsubscribe link.</p>
+      </div>
+      <div class="step">
+        <h3>Choose who goes</h3>
+        <p>See every mailing-list sender and how many emails they've sent you. Clear many at once with History Clean, or decide one by one with Daily Swipe.</p>
+      </div>
+      <div class="step">
+        <h3>Zap</h3>
+        <p>Unsub sends the sender an unsubscribe request and moves all of their mailing-list emails to Trash, recoverable for 30 days. Most senders stop within 2 days.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy" class="white">
+  <div class="wrap">
+    <h2>Why Unsub needs Gmail access</h2>
+    <p class="lead">Unsub asks Google for one permission (gmail.modify). Google describes it broadly, so here is exactly what Unsub does and doesn't do with it.</p>
+    <div class="two">
+      <div>
+        <h3 style="margin-bottom:8px;">Unsub uses it to</h3>
+        <ul>
+          <li>Read the sender name, sender address and subject line of mailing-list emails, so you can see who's emailing you</li>
+          <li>Read the standard unsubscribe link senders include in their emails</li>
+          <li>Move emails from senders you choose to Trash</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin-bottom:8px;">Unsub never</h3>
+        <ul>
+          <li class="no">Reads the body or attachments of your emails</li>
+          <li class="no">Sends email from your account</li>
+          <li class="no">Permanently deletes anything</li>
+          <li class="no">Sells your data, uses it for ads, or uses it to train AI</li>
+        </ul>
+      </div>
+    </div>
+    <p style="margin-top:28px; color:#475569;">Unsub's use and transfer of information received from Google APIs adheres to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements. Read our full <a href="/privacy.html">Privacy Policy</a>. You can disconnect anytime at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</p>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="price">
+      <h2>One simple plan</h2>
+      <div class="amount">$1.99 <small>/ month</small></div>
+      <p>Unlimited unsubscribes and inbox cleaning. Billed monthly through Stripe. Cancel anytime from inside the app.</p>
+      <a class="cta" href="https://app.appunsub.com">Get started with Gmail</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap row">
+    <div>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+      <a href="mailto:jenny@jentlestay.com">Contact</a>
+    </div>
+    <div>© 2026 Unsub · Operated by Jennifer Borkowski, Illinois, USA</div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const dns = require('dns').promises;
 const net = require('net');
+const path = require('path');
 const { google } = require('googleapis');
 const session = require('express-session');
 const app = express();
@@ -41,6 +42,14 @@ app.use((req, res, next) => {
     try { p = decodeURIComponent(req.path); } catch (e) { /* ignore */ }
     if (/^\/(server\.js|package(-lock)?\.json|node_modules|\.git|\.env)/i.test(p)) {
         return res.status(404).send('Not found');
+    }
+    next();
+});
+// HOMEPAGE: appunsub.com (and www.) show the marketing homepage; app.appunsub.com shows the app
+app.get(['/', '/index.html'], (req, res, next) => {
+    const host = (req.hostname || '').toLowerCase();
+    if (host === 'appunsub.com' || host === 'www.appunsub.com') {
+        return res.sendFile(path.join(__dirname, 'home.html'));
     }
     next();
 });
