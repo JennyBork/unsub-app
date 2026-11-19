@@ -133,7 +133,9 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
       </div>
       <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.02); display:flex; flex-direction:column; gap:12px;">
         <p style="font-size:12px; color:#475569; line-height:1.5; text-align:left;">Unlock continuous background scanning, automatic classification of commercial newsletter streams, and priority multi-provider cloud sync. Please note: Once active, it may take 48–72 hours for your mailbox to fully clear out unwanted promo emails as cached streams process. Also includes unlimited access to the mobile Tinder-style swipe-deck maintenance dashboard.</p>
-        <button class="zap-button" style="background-color:#10b981; box-shadow:0 4px 15px rgba(16,185,129,0.3);" onclick="handlePaymentSubmit()">Subscribe Securely Via Stripe</button>
+        <p id="paywall-status" style="font-size:12px; font-weight:700; color:#b45309; background:#fef3c7; border-radius:10px; padding:10px;">Step 1: Connect your Gmail on the "Daily Swipe" tab. Step 2: Subscribe here to unlock cleaning.</p>
+        <button id="subscribe-button" class="zap-button" style="background-color:#10b981; box-shadow:0 4px 15px rgba(16,185,129,0.3);" onclick="handlePaymentSubmit()">Subscribe Securely Via Stripe</button>
+        <button id="manage-button" class="hidden" onclick="openBillingPortal()" style="width:100%; background:#ffffff; border:2px solid #cbd5e1; color:#334155; padding:12px; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">Manage or Cancel Subscription</button>
       </div>
       <div class="trust-banner">Billed automatically every 30 days. Cancel or manage your subscription anytime via your Jentlestay Unsubapp customer billing portal. Bank-grade 256-bit SSL encrypted checkout platform.</div>
     </div>
@@ -262,8 +264,25 @@ async function loadRealInboxData() {
         });
         
         const data = await response.json();
-        
+
+        // PAYWALL: server says this account hasn't paid yet
+        if (response.status === 402 || data.needsPayment) {
+            showPaywall();
+            return false;
+        }
+        if (response.status === 503) {
+            updateTicker('Could not verify subscription. Please try again shortly.');
+            alert(data.message);
+            return false;
+        }
+        if (response.status === 401) {
+            alert('Your session expired. Please connect your Gmail again.');
+            handleLogout();
+            return false;
+        }
+
         if (data.success) {
+            setPaidUI(true);
             liveMessages = data.messages || [];
             
             if (liveMessages.length === 0) {
@@ -275,6 +294,7 @@ async function loadRealInboxData() {
             currentIndex = 0;
             renderDeck();
             loadHistoryList();
+            return true;
         } else {
             updateTicker('Failed to load inbox. Please reconnect.');
             alert('Failed to load your inbox. Please try connecting again.');
@@ -362,6 +382,7 @@ function triggerSwipe(direction) {
             headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken },
             body: JSON.stringify({ senders: [senderToZap] })
         }).then(r => r.json()).then(d => {
+            if (d.needsPayment) { showPaywall(); return; }
             updateTicker(d.success ? ('Zapped ' + senderToZap) : 'Zap failed. Please try again.');
         }).catch(() => updateTicker('Zap error occurred.'));
     }
@@ -398,7 +419,9 @@ async function executeZap() {
         });
         
         const data = await response.json();
-        
+
+        if (data.needsPayment) { showPaywall(); return; }
+
         if (data.success) {
             alert(`🎉 Success! ${data.message || ('Zapped ' + emails.length + ' senders.')}`);
             document.getElementById('ui-list').innerHTML = '<div class="loading-text">✨ All selected clutter purged successfully.</div>';
@@ -414,8 +437,74 @@ async function executeZap() {
     }
 }
 
-function handlePaymentSubmit() {
-    window.open("https://buy.stripe.com/00waEQeX27xscBscVTfAc04", '_blank');
+// ============================================
+// PAYWALL
+// ============================================
+
+function setPaidUI(paid) {
+    document.getElementById('subscribe-button').classList.toggle('hidden', paid);
+    document.getElementById('manage-button').classList.toggle('hidden', !paid);
+    document.getElementById('paywall-status').innerText = paid
+        ? `✅ Subscription active for ${userEmail}.`
+        : (userSessionToken
+            ? `🔒 Connected as ${userEmail}. Subscribe to unlock cleaning.`
+            : 'Step 1: Connect your Gmail on the "Daily Swipe" tab. Step 2: Subscribe here to unlock cleaning.');
+}
+
+function showPaywall() {
+    liveMessages = [];
+    currentIndex = 0;
+    document.getElementById('sender-name').innerText = '🔒 Subscription required';
+    document.getElementById('sender-email').innerText = 'Subscribe for $1.99/month to start cleaning.';
+    document.getElementById('sender-subject').innerText = 'Tap the "Secure Access" tab to subscribe.';
+    document.getElementById('queue-counter').innerText = 'Locked';
+    document.getElementById('master-select-all-header').classList.add('hidden');
+    document.getElementById('ui-list').innerHTML = '<div class="loading-text">🔒 Subscribe on the "Secure Access" tab to unlock cleaning.</div>';
+    setPaidUI(false);
+    updateTicker(`Connected as ${userEmail}. Subscription required to continue.`);
+    switchView('pay');
+}
+
+async function handlePaymentSubmit() {
+    if (!userSessionToken) {
+        alert('First connect your Gmail on the "Daily Swipe" tab, so your subscription is linked to your account. Then come back here to subscribe.');
+        switchView('swipe');
+        return;
+    }
+    updateTicker('Opening secure Stripe checkout...');
+    try {
+        const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken }
+        });
+        const data = await response.json();
+        if (data.alreadyPaid) {
+            updateTicker('Subscription already active! Loading inbox...');
+            await loadRealInboxData();
+            switchView('swipe');
+        } else if (data.url) {
+            window.location.href = data.url; // same tab, so Stripe brings them right back
+        } else {
+            if (response.status === 401) handleLogout();
+            alert(data.message || 'Could not open checkout. Please try again.');
+        }
+    } catch (e) {
+        alert('Could not open checkout. Please check your connection and try again.');
+    }
+}
+
+async function openBillingPortal() {
+    try {
+        const response = await fetch('/api/billing-portal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken }
+        });
+        const data = await response.json();
+        if (data.url) window.location.href = data.url;
+        else alert(data.message || 'Could not open the billing portal.');
+    } catch (e) {
+        alert('Could not open the billing portal. Please try again.');
+    }
 }
 
 function handleLogout() {
@@ -431,7 +520,8 @@ function handleLogout() {
     document.getElementById('swipe-deck-interface').classList.add('hidden');
     document.getElementById('ui-list').innerHTML = '<div class="loading-text">🔒 Connect your mailbox via \'Daily Swipe\' to load clutter streams.</div>';
     document.getElementById('master-select-all-header').classList.add('hidden');
-    
+    setPaidUI(false);
+
     updateTicker('Disconnected. Please reconnect your mailbox.');
     
     // Switch to swipe tab
@@ -440,30 +530,53 @@ function handleLogout() {
 
 // Check for existing session on page load
 window.addEventListener('DOMContentLoaded', async () => {
+    // Coming back from Stripe (or from the Gmail login on phones): ?session=...&checkout=...
+    const params = new URLSearchParams(window.location.search);
+    const urlSession = params.get('session');
+    const checkoutResult = params.get('checkout');
+    if (urlSession) {
+        localStorage.setItem('unsub_session', urlSession);
+        history.replaceState(null, '', '/'); // hide the session from the address bar
+    }
+
     const savedSession = localStorage.getItem('unsub_session');
-    const savedEmail = localStorage.getItem('unsub_email');
-    
-    if (savedSession && savedEmail) {
+
+    if (savedSession) {
         updateTicker('Checking existing session...');
-        
+
         // Verify session is still valid
         try {
-            const response = await fetch(`/api/session/${savedSession}`);
+            const response = await fetch(`/api/session/${encodeURIComponent(savedSession)}`);
             const data = await response.json();
-            
+
             if (data.valid) {
                 userSessionToken = savedSession;
-                userEmail = savedEmail;
-                
-                updateTicker(`Welcome back, ${userEmail}! Loading inbox...`);
+                userEmail = data.email;
+                localStorage.setItem('unsub_email', userEmail);
+
                 document.getElementById('provider-login-screen').classList.add('hidden');
                 document.getElementById('swipe-deck-interface').classList.remove('hidden');
-                
-                await loadRealInboxData();
+                switchView('swipe');
+
+                if (checkoutResult === 'success') {
+                    updateTicker('🎉 Payment received! Unlocking your inbox...');
+                    // Stripe can take a few seconds to activate a new subscription
+                    for (let attempt = 0; attempt < 4; attempt++) {
+                        if (await loadRealInboxData()) { switchView('swipe'); break; }
+                        if (attempt < 3) await new Promise(r => setTimeout(r, 2500));
+                    }
+                } else {
+                    if (checkoutResult === 'cancelled') updateTicker('Checkout cancelled.');
+                    else updateTicker(`Welcome back, ${userEmail}! Loading inbox...`);
+                    await loadRealInboxData();
+                }
             } else {
                 localStorage.removeItem('unsub_session');
                 localStorage.removeItem('unsub_email');
-                updateTicker('Session expired. Please reconnect.');
+                updateTicker(checkoutResult === 'success'
+                    ? 'Payment received! Please connect your Gmail again to continue.'
+                    : 'Session expired. Please reconnect.');
+                switchView('swipe');
             }
         } catch (err) {
             console.error('Session check failed:', err);

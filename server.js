@@ -21,6 +21,14 @@ const AZURE_TENANT_ID = process.env.AZURE_TENANT_ID;
 
 const SESSION_SECRET = process.env.SESSION_SECRET || 'unsub-secret-key-change-this-in-production';
 
+// STRIPE (set these on Render → Environment)
+// STRIPE_SECRET_KEY  = your sk_live_... key (REQUIRED – without it nobody gets in)
+// STRIPE_PRICE_ID    = price_... for the $1.99/month plan (optional – if blank,
+//                      the server finds it from your payment link below)
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
+const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/00waEQeX27xscBscVTfAc04';
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -84,6 +92,102 @@ function jsValue(value) {
 
 // Store active sessions
 const activeSessions = {};
+
+// ============================================
+// STRIPE HELPERS (uses Stripe's web API directly – no extra package needed)
+// ============================================
+
+async function stripeRequest(method, path, params) {
+    if (!STRIPE_SECRET_KEY) throw new Error('STRIPE_SECRET_KEY is not set on the server');
+    const query = new URLSearchParams(params || {}).toString();
+    const isGet = method === 'GET';
+    const res = await fetch('https://api.stripe.com/v1' + path + (isGet && query ? '?' + query : ''), {
+        method,
+        headers: {
+            Authorization: 'Bearer ' + STRIPE_SECRET_KEY,
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: isGet ? undefined : query
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error((data.error && data.error.message) || 'Stripe request failed');
+    return data;
+}
+
+// Find the $1.99 price: from STRIPE_PRICE_ID, or by looking up the payment link
+let cachedPriceId = STRIPE_PRICE_ID || null;
+async function getPriceId() {
+    if (cachedPriceId) return cachedPriceId;
+    let startingAfter;
+    for (let page = 0; page < 5; page++) {
+        const params = { limit: 100 };
+        if (startingAfter) params.starting_after = startingAfter;
+        const links = await stripeRequest('GET', '/payment_links', params);
+        const match = links.data.find(l => l.url === STRIPE_PAYMENT_LINK);
+        if (match) {
+            const items = await stripeRequest('GET', `/payment_links/${match.id}/line_items`, { limit: 1 });
+            cachedPriceId = items.data[0].price.id;
+            console.log(`💳 Using Stripe price ${cachedPriceId} (from payment link)`);
+            return cachedPriceId;
+        }
+        if (!links.has_more || links.data.length === 0) break;
+        startingAfter = links.data[links.data.length - 1].id;
+    }
+    throw new Error('Could not find the Stripe price. Set STRIPE_PRICE_ID on Render.');
+}
+
+// Does this email address have an active subscription in Stripe?
+async function findSubscription(email) {
+    const variants = [...new Set([email, email.toLowerCase()])];
+    let anyCustomerId = null;
+    for (const address of variants) {
+        const customers = await stripeRequest('GET', '/customers', { email: address, limit: 10 });
+        for (const customer of customers.data) {
+            anyCustomerId = anyCustomerId || customer.id;
+            const subs = await stripeRequest('GET', '/subscriptions', { customer: customer.id, status: 'all', limit: 10 });
+            if (subs.data.some(s => s.status === 'active' || s.status === 'trialing')) {
+                return { paid: true, customerId: customer.id };
+            }
+        }
+    }
+    return { paid: false, customerId: anyCustomerId };
+}
+
+// Checks payment for a session. A "paid" answer is remembered for 10 minutes;
+// an "unpaid" answer is re-checked every time, so access opens right after paying.
+async function isPaid(userSession) {
+    if (userSession.paid && Date.now() - userSession.paidCheckedAt < 10 * 60 * 1000) return true;
+    const result = await findSubscription(userSession.email);
+    userSession.paid = result.paid;
+    userSession.paidCheckedAt = Date.now();
+    userSession.stripeCustomerId = result.customerId;
+    return result.paid;
+}
+
+// Sends the right "you must pay" or "couldn't check" reply. Returns true if the user may continue.
+async function requirePaid(userSession, res) {
+    try {
+        if (await isPaid(userSession)) return true;
+        res.status(402).json({
+            success: false,
+            needsPayment: true,
+            email: userSession.email,
+            message: 'An active Unsub subscription is required.'
+        });
+    } catch (err) {
+        // Fail CLOSED: if we can't confirm payment, we don't give access
+        console.error('Payment check failed:', err.message);
+        res.status(503).json({
+            success: false,
+            message: 'We could not verify your subscription right now. Please try again in a minute.'
+        });
+    }
+    return false;
+}
+
+function siteUrl(req) {
+    return `${req.protocol}://${req.get('host')}`;
+}
 
 // Remove sessions older than 7 days (once an hour)
 setInterval(() => {
@@ -276,6 +380,9 @@ app.post('/api/connect', async (req, res) => {
 
     const userSession = activeSessions[sessionId];
 
+    // PAYWALL: no inbox access until Stripe confirms an active subscription
+    if (!(await requirePaid(userSession, res))) return;
+
     try {
         if (userSession.provider === 'gmail') {
             // Each user gets their OWN client with THEIR OWN tokens
@@ -375,6 +482,9 @@ app.post('/api/zap', async (req, res) => {
 
     const userSession = activeSessions[sessionId];
 
+    // PAYWALL: no zapping until Stripe confirms an active subscription
+    if (!(await requirePaid(userSession, res))) return;
+
     try {
         if (userSession.provider !== 'gmail') {
             return res.status(400).json({
@@ -460,7 +570,8 @@ app.get('/api/session/:sessionId', (req, res) => {
         res.json({
             valid: true,
             email: found.email,
-            provider: found.provider
+            provider: found.provider,
+            paid: !!found.paid
         });
     } else {
         res.json({ valid: false });
@@ -468,15 +579,72 @@ app.get('/api/session/:sessionId', (req, res) => {
 });
 
 // ============================================
-// STRIPE PAYMENT ENDPOINT (Optional - for future use)
+// STRIPE: START CHECKOUT (subscription tied to the connected Gmail address)
 // ============================================
 
-app.post('/api/create-checkout-session', async (req, res) => {
-    // Your current setup uses a direct Stripe payment link, which is fine
-    res.json({
-        message: 'Using direct Stripe payment link',
-        url: 'https://buy.stripe.com/00waEQeX27xscBscVTfAc04'
-    });
+app.post('/api/checkout', async (req, res) => {
+    const sessionId = req.headers['x-user-session'];
+    const userSession = sessionId && activeSessions[sessionId];
+    if (!userSession) {
+        return res.status(401).json({ success: false, message: 'Please connect your Gmail first.' });
+    }
+
+    try {
+        if (await isPaid(userSession)) {
+            return res.json({ success: true, alreadyPaid: true });
+        }
+
+        const base = siteUrl(req);
+        const params = {
+            mode: 'subscription',
+            'line_items[0][price]': await getPriceId(),
+            'line_items[0][quantity]': 1,
+            client_reference_id: userSession.email,
+            success_url: `${base}/?session=${encodeURIComponent(sessionId)}&checkout=success`,
+            cancel_url: `${base}/?session=${encodeURIComponent(sessionId)}&checkout=cancelled`
+        };
+        // Reuse their old Stripe customer if they subscribed before; otherwise
+        // lock the checkout to their Gmail address so the payment matches their login.
+        if (userSession.stripeCustomerId) params.customer = userSession.stripeCustomerId;
+        else params.customer_email = userSession.email;
+
+        const checkout = await stripeRequest('POST', '/checkout/sessions', params);
+        res.json({ success: true, url: checkout.url });
+    } catch (err) {
+        console.error('Checkout Error:', err.message);
+        // Backup plan: the payment link, with the email locked to their Gmail address
+        res.json({
+            success: true,
+            url: `${STRIPE_PAYMENT_LINK}?locked_prefilled_email=${encodeURIComponent(userSession.email)}`
+        });
+    }
+});
+
+// ============================================
+// STRIPE: CUSTOMER BILLING PORTAL (cancel / update card)
+// ============================================
+
+app.post('/api/billing-portal', async (req, res) => {
+    const sessionId = req.headers['x-user-session'];
+    const userSession = sessionId && activeSessions[sessionId];
+    if (!userSession) {
+        return res.status(401).json({ success: false, message: 'Please connect your Gmail first.' });
+    }
+
+    try {
+        if (!userSession.stripeCustomerId) await isPaid(userSession);
+        if (!userSession.stripeCustomerId) {
+            return res.status(404).json({ success: false, message: 'No subscription found for ' + userSession.email });
+        }
+        const portal = await stripeRequest('POST', '/billing_portal/sessions', {
+            customer: userSession.stripeCustomerId,
+            return_url: siteUrl(req) + '/'
+        });
+        res.json({ success: true, url: portal.url });
+    } catch (err) {
+        console.error('Billing Portal Error:', err.message);
+        res.status(500).json({ success: false, message: 'Could not open the billing portal. Please email jenny@jentlestay.com.' });
+    }
 });
 
 // ============================================
@@ -490,6 +658,7 @@ app.get('/health', (req, res) => {
         activeSessions: Object.keys(activeSessions).length,
         gmailConfigured: !!GMAIL_CLIENT_ID,
         gmailSecretConfigured: !!GMAIL_CLIENT_SECRET,
+        stripeConfigured: !!STRIPE_SECRET_KEY,
         azureConfigured: !!AZURE_CLIENT_ID
     });
 });
@@ -505,6 +674,7 @@ const server = app.listen(PORT, () => {
     console.log(`🌐 https://unsub-app-w0c7.onrender.com`);
     console.log(`📧 Gmail OAuth: ${GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET ? 'Configured ✅' : 'Not configured ⚠️'}`);
     console.log(`📧 Azure OAuth: ${AZURE_CLIENT_ID ? 'Configured ✅' : 'Not configured ⚠️'}`);
+    console.log(`💳 Stripe: ${STRIPE_SECRET_KEY ? 'Configured ✅' : 'NOT configured ⚠️ (set STRIPE_SECRET_KEY on Render – nobody can get in until you do)'}`);
     console.log(`🔐 Session Secret: ${process.env.SESSION_SECRET ? 'Set ✅' : 'Using default ⚠️ (set SESSION_SECRET on Render)'}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 });
