@@ -465,7 +465,36 @@ function showPaywall() {
     switchView('pay');
 }
 
+// Use a login that was saved by the Gmail popup (or another tab)
+async function adoptSession(sessionId) {
+    if (!sessionId || sessionId === userSessionToken) return !!userSessionToken;
+    try {
+        const response = await fetch(`/api/session/${encodeURIComponent(sessionId)}`);
+        const data = await response.json();
+        if (!data.valid) return false;
+        userSessionToken = sessionId;
+        userEmail = data.email;
+        localStorage.setItem('unsub_email', userEmail);
+        document.getElementById('provider-login-screen').classList.add('hidden');
+        document.getElementById('swipe-deck-interface').classList.remove('hidden');
+        updateTicker(`Connected as ${userEmail}! Loading inbox...`);
+        await loadRealInboxData();
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// When the Gmail popup finishes, it saves the login; this window notices right away.
+window.addEventListener('storage', (event) => {
+    if (event.key === 'unsub_session' && event.newValue) adoptSession(event.newValue);
+});
+
 async function handlePaymentSubmit() {
+    if (!userSessionToken) {
+        // Maybe the popup connected but couldn't tell this window – check for its saved login
+        await adoptSession(localStorage.getItem('unsub_session'));
+    }
     if (!userSessionToken) {
         alert('First connect your Gmail on the "Daily Swipe" tab, so your subscription is linked to your account. Then come back here to subscribe.');
         switchView('swipe');

@@ -324,6 +324,14 @@ app.get('/auth/google/callback', async (req, res) => {
                         <p>You can close this window now.</p>
                     </div>
                     <script>
+                        // Save the login where the main app window can always see it.
+                        // (Google's sign-in pages often cut the popup off from the main
+                        // window, so window.opener alone is not reliable.)
+                        try {
+                            localStorage.setItem('unsub_session', ${jsValue(sessionId)});
+                            localStorage.setItem('unsub_email', ${jsValue(email)});
+                        } catch (e) { /* storage blocked – fall through to redirect */ }
+
                         if (window.opener) {
                             window.opener.postMessage({
                                 type: 'oauth_success',
@@ -333,7 +341,12 @@ app.get('/auth/google/callback', async (req, res) => {
                             }, window.location.origin);
                             setTimeout(() => window.close(), 2000);
                         } else {
-                            window.location.href = '/?session=' + encodeURIComponent(${jsValue(sessionId)});
+                            // Popup lost its link: close it (the main window picks up the login).
+                            // If this wasn't a popup (e.g. on a phone), go to the app instead.
+                            window.close();
+                            setTimeout(() => {
+                                window.location.href = '/?session=' + encodeURIComponent(${jsValue(sessionId)});
+                            }, 800);
                         }
                     </script>
                 </body>
