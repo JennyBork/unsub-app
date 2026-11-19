@@ -126,18 +126,18 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
 
     <!-- VIEW 3: SECURE ACCESS (STRIPE) -->
     <div id="view-pay-container" class="hidden pay-workspace">
-      <div class="premium-badge">AUTOMATED SCRUB</div>
+      <div class="premium-badge">UNSUB MEMBERSHIP</div>
       <div class="price-hero">
         <div class="price-amount">$1.99 per month</div>
-        <div class="price-subtitle">(Automated Mailbox Cleaning Included)</div>
+        <div class="price-subtitle">(Unlimited unsubscribes and inbox cleaning)</div>
       </div>
       <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.02); display:flex; flex-direction:column; gap:12px;">
-        <p style="font-size:12px; color:#475569; line-height:1.5; text-align:left;">Unlock continuous background scanning, automatic classification of commercial newsletter streams, and priority multi-provider cloud sync. Please note: Once active, it may take 48–72 hours for your mailbox to fully clear out unwanted promo emails as cached streams process. Also includes unlimited access to the mobile Tinder-style swipe-deck maintenance dashboard.</p>
+        <p style="font-size:12px; color:#475569; line-height:1.5; text-align:left;">Unsubscribe from the mailing lists you don't want and clear out their old emails in one tap. When you zap a sender, Unsub sends them an unsubscribe request and moves all of their promotional emails to Trash (recoverable for 30 days). Most senders stop emailing within 2 days. A few senders don't offer automatic unsubscribe; Unsub marks those and still clears them from your inbox. Use History Clean to clear many senders at once, or Daily Swipe to decide sender by sender. Currently supports Gmail.</p>
         <p id="paywall-status" style="font-size:12px; font-weight:700; color:#b45309; background:#fef3c7; border-radius:10px; padding:10px;">Step 1: Connect your Gmail on the "Daily Swipe" tab. Step 2: Subscribe here to unlock cleaning.</p>
         <button id="subscribe-button" class="zap-button" style="background-color:#10b981; box-shadow:0 4px 15px rgba(16,185,129,0.3);" onclick="handlePaymentSubmit()">Subscribe Securely Via Stripe</button>
         <button id="manage-button" class="hidden" onclick="openBillingPortal()" style="width:100%; background:#ffffff; border:2px solid #cbd5e1; color:#334155; padding:12px; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">Manage or Cancel Subscription</button>
       </div>
-      <div class="trust-banner">Billed automatically every 30 days. Cancel or manage your subscription anytime via your Jentlestay Unsubapp customer billing portal. Bank-grade 256-bit SSL encrypted checkout platform.</div>
+      <div class="trust-banner">Billed monthly until you cancel. Cancel anytime with the Manage or Cancel Subscription button. Payments are processed securely by Stripe; we never see your card details.</div>
     </div>
   </div>
 </div>
@@ -278,11 +278,15 @@ function loadHistoryList() {
     const bySender = new Map();
     liveMessages.forEach((item) => {
         const key = item.email.toLowerCase();
-        if (bySender.has(key)) { bySender.get(key).count++; }
-        else { bySender.set(key, { item: item, count: 1 }); }
+        if (bySender.has(key)) {
+            bySender.get(key).count++;
+            if (item.oneClick) bySender.get(key).oneClick = true;
+        } else {
+            bySender.set(key, { item: item, count: 1, oneClick: !!item.oneClick });
+        }
     });
 
-    bySender.forEach(({ item, count }) => {
+    bySender.forEach(({ item, count, oneClick }) => {
         const div = document.createElement('div');
         div.className = 'sender-item selected';
         div.setAttribute('data-email', item.email);
@@ -297,7 +301,7 @@ function loadHistoryList() {
         `;
         // textContent keeps email text from ever running as code
         div.querySelector('.sender-name').textContent = item.name;
-        div.querySelector('.sender-email').textContent = item.email + ' — "' + item.subject + '"';
+        div.querySelector('.sender-email').textContent = (oneClick ? '✓ Auto-unsubscribe · ' : '') + item.email + ' — "' + item.subject + '"';
         div.querySelector('.count-badge').textContent = count;
         listEl.appendChild(div);
     });
@@ -317,8 +321,13 @@ function buildSwipeDeck() {
     const bySender = new Map();
     liveMessages.forEach((item) => {
         const key = item.email.toLowerCase();
-        if (bySender.has(key)) bySender.get(key).count++;
-        else bySender.set(key, { ...item, count: 1 });
+        if (bySender.has(key)) {
+            const s = bySender.get(key);
+            s.count++;
+            if (item.oneClick) s.oneClick = true;
+        } else {
+            bySender.set(key, { ...item, count: 1 });
+        }
     });
     swipeDeck = Array.from(bySender.values());
 }
@@ -336,7 +345,8 @@ function renderDeck() {
     document.getElementById('sender-category').innerText = currentCard.category || 'Promotions';
     document.getElementById('sender-name').innerText = currentCard.name;
     document.getElementById('sender-email').innerText = currentCard.email +
-        (currentCard.count > 1 ? ` · ${currentCard.count} emails` : '');
+        `\n${currentCard.count} email${currentCard.count === 1 ? '' : 's'} · ` +
+        (currentCard.oneClick ? '✓ Auto-unsubscribe available' : 'Clear from inbox only');
     document.getElementById('sender-subject').innerText = `"${currentCard.subject}"`;
     document.getElementById('queue-counter').innerText = `${swipeDeck.length - currentIndex} in queue`;
 }
@@ -353,7 +363,11 @@ function triggerSwipe(direction) {
             body: JSON.stringify({ senders: [senderToZap] })
         }).then(r => r.json()).then(d => {
             if (d.needsPayment) { showPaywall(); return; }
-            updateTicker(d.success ? (`Zapped ${senderToZap} (${d.trashed} emails moved to Trash)`) : 'Zap failed. Please try again.');
+            if (!d.success) { updateTicker('Zap failed. Please try again.'); return; }
+            const r = (d.results && d.results[0]) || {};
+            updateTicker(r.unsubscribed
+                ? `Unsubscribed from ${senderToZap} and moved ${r.trashed} emails to Trash.`
+                : `${senderToZap} doesn't support automatic unsubscribe. Moved ${r.trashed || 0} emails to Trash.`);
         }).catch(() => updateTicker('Zap error occurred.'));
     }
 
@@ -376,7 +390,7 @@ async function executeZap() {
         return; 
     }
     
-    updateTicker(`Batch zapping ${emails.length} targets...`);
+    updateTicker(`Unsubscribing and clearing ${emails.length} senders... this can take a minute.`);
     
     try {
         const response = await fetch('/api/zap', {
@@ -393,9 +407,12 @@ async function executeZap() {
         if (data.needsPayment) { showPaywall(); return; }
 
         if (data.success) {
-            alert(`🎉 Success! ${data.message || ('Zapped ' + emails.length + ' senders.')}`);
-            document.getElementById('ui-list').innerHTML = '<div class="loading-text">✨ All selected clutter purged successfully.</div>';
-            updateTicker(`Successfully zapped ${emails.length} senders.`);
+            const skipped = data.count - data.unsubscribed;
+            alert(`🎉 Done! Unsubscribed from ${data.unsubscribed} of ${data.count} senders and moved ${data.trashed} emails to Trash.` +
+                (skipped > 0 ? `\n\n${skipped} sender${skipped === 1 ? " doesn't" : "s don't"} support automatic unsubscribe, so their emails were cleared from your inbox only.` : '') +
+                `\n\nMost senders stop within 2 days.`);
+            document.getElementById('ui-list').innerHTML = '<div class="loading-text">✨ Done! Selected senders unsubscribed and cleared.</div>';
+            updateTicker(`Unsubscribed from ${data.unsubscribed} of ${data.count} senders. Moved ${data.trashed} emails to Trash.`);
         } else {
             alert('Failed to zap senders. Please try again.');
             updateTicker('Zap failed. Please try again.');

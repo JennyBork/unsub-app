@@ -3,592 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unsub</title>
+<title>Privacy Policy – Unsub</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; user-select: none; }
-body { background-color: #f4f7f6; color: #222; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
-.app-container { background-color: #ffffff; width: 100%; max-width: 412px; height: 800px; border-radius: 32px; box-shadow: 0 12px 40px rgba(0,0,0,0.12); border: 8px solid #222; display: flex; flex-direction: column; overflow: hidden; position: relative; }
-.app-header { padding: 20px; background: linear-gradient(135deg, #2c3e50, #34495e); color: #ffffff; text-align: center; position: relative; }
-.app-header h1 { font-size: 24px; font-weight: 700; }
-.tab-bar { display: flex; background-color: #1e293b; border-bottom: 2px solid #334155; }
-.tab-button { flex: 1; padding: 14px 5px; background: none; border: none; color: #94a3b8; font-weight: 600; font-size: 11px; cursor: pointer; transition: 0.2s; white-space: nowrap; text-transform: uppercase; }
-.tab-button.active { color: #ffffff; border-bottom: 3px solid #e74c3c; background-color: rgba(255,255,255,0.05); }
-.workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; background-color: #f8fafc; position: relative; }
-#view-list-container { display: flex; flex-direction: column; height: 100%; overflow: hidden; width: 100%; }
-.hidden { display: none !important; }
-.live-feed-ticker { background-color: #1e293b; color: #38bdf8; font-family: monospace; font-size: 11px; padding: 8px 16px; border-bottom: 1px solid #334155; }
-.clutter-list { flex: 1; overflow-y: auto; padding: 10px 0; -webkit-overflow-scrolling: touch; }
-.sender-item { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
-.custom-checkbox { width: 22px; height: 22px; border: 2px solid #cbd5e1; border-radius: 6px; margin-right: 16px; display: flex; align-items: center; justify-content: center; }
-.sender-item.selected .custom-checkbox { background-color: #e74c3c; border-color: #e74c3c; }
-.sender-item.selected .custom-checkbox::after { content: '✓'; color: white; font-weight: bold; }
-.sender-details { flex: 1; min-width: 0; }
-.sender-name { font-weight: 600; font-size: 15px; color: #1e293b; }
-.sender-email { font-size: 12px; color: #64748b; }
-.count-badge { background-color: #fee2e2; color: #ef4444; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: 700; }
-.action-panel { padding: 20px; background-color: #ffffff; border-top: 1px solid #e2e8f0; width: 100%; position: relative; z-index: 10; }
-.zap-button { width: 100%; background-color: #e74c3c; color: white; border: none; padding: 16px; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(231,76,60,0.2); }
-.deck-workspace { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 25px 20px; overflow-y: auto; }
-.pay-workspace { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.premium-badge { background: #fef3c7; border: 1px solid #f59e0b; color: #b45309; padding: 10px; border-radius: 12px; text-align: center; font-size: 12px; font-weight: 700; }
-.price-hero { text-align: center; }
-.price-amount { font-size: 34px; font-weight: 900; color: #1e293b; }
-.price-subtitle { font-size: 12px; color: #64748b; margin-top: 2px; }
-.trust-banner { text-align: center; font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.4; }
-.loading-text { text-align: center; padding: 40px; color: #64748b; font-style: italic; font-size: 13px; line-height: 1.5; }
-.provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; width: 100%; }
-.provider-card { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 14px 6px; font-size: 13px; text-align: center; font-weight: 700; cursor: pointer; transition: 0.2s; color: #334155; width: 100%; height: 50px; display: flex; align-items: center; justify-content: center; }
-.provider-card:hover, .provider-card.selected { border-color: #2c3e50; background-color: #f8fafc; }
-.gateway-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
-.gateway-modal { background: #ffffff; width: 100%; max-width: 360px; border-radius: 20px; padding: 24px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body { background: #f4f7f6; color: #1e293b; line-height: 1.65; padding: 24px 16px; }
+.wrap { max-width: 760px; margin: 0 auto; background: #ffffff; border-radius: 20px; box-shadow: 0 8px 30px rgba(0,0,0,0.08); overflow: hidden; }
+header { background: linear-gradient(135deg, #2c3e50, #34495e); color: #fff; padding: 28px 32px; }
+header h1 { font-size: 26px; font-weight: 700; }
+header p { font-size: 13px; color: #cbd5e1; margin-top: 4px; }
+main { padding: 28px 32px 36px; }
+h2 { font-size: 18px; margin: 28px 0 8px; color: #1e293b; }
+p, li { font-size: 15px; color: #334155; }
+p { margin-bottom: 12px; }
+ul { margin: 0 0 12px 22px; }
+li { margin-bottom: 6px; }
+a { color: #2563eb; }
+.callout { background: #f1f5f9; border-left: 4px solid #e74c3c; padding: 14px 16px; border-radius: 8px; margin: 16px 0; }
+footer { padding: 18px 32px; border-top: 1px solid #e2e8f0; font-size: 13px; color: #64748b; }
+@media (max-width: 520px) { header, main, footer { padding-left: 20px; padding-right: 20px; } }
 </style>
 </head>
-<body><div class="app-container">
-  <div class="app-header">
-    <h1>🧼 Unsub</h1>
-    <button onclick="handleLogout()" style="position:absolute;top:20px;right:20px;background:#1e293b;color:#fff;border:none;padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;">🔄 Reset</button>
-  </div>
-  
-  <div class="tab-bar">
-    <button class="tab-button active" id="tab-list" onclick="switchView('list')">History Clean</button>
-    <button class="tab-button" id="tab-swipe" onclick="switchView('swipe')">Daily Swipe</button>
-    <button class="tab-button" id="tab-pay" onclick="switchView('pay')">Secure Access</button>
-  </div>
-  
-  <div class="live-feed-ticker" id="app-ticker">🤖 Status: System initialized. Zero-password onboarding active.</div>
-  
-  <div class="workspace">
-    <!-- VIEW 1: HISTORY CLEAN -->
-    <div id="view-list-container">
-      <div id="master-select-all-header" class="hidden" style="display:flex; align-items:center; padding:12px 20px; background-color:#f1f5f9; border-bottom:2px solid #e2e8f0; cursor:pointer;" onclick="toggleMasterSelectAll(this)">
-        <div class="custom-checkbox" id="master-select-all-box" style="border-color:#94a3b8;"></div>
-        <div style="font-weight:700; font-size:13px; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">Select All Senders</div>
-      </div>
-      <div class="clutter-list" id="ui-list">
-        <div class="loading-text">🔒 Connect your mailbox via 'Daily Swipe' to load clutter streams.</div>
-      </div>
-      <div class="action-panel">
-        <button class="zap-button" onclick="executeZap()">⚡ Zap Selected Senders</button>
-      </div>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🧼 Unsub – Privacy Policy</h1>
+    <p>Last updated: November 19, 2026</p>
+  </header>
+  <main>
+    <p>Unsub (“Unsub,” “we,” “us”) is operated by Jennifer Borkowski, based in Illinois, USA. Unsub helps you clean promotional email out of your inbox. This policy explains what information the app accesses, how it is used, and the choices you have. You can reach us at <a href="mailto:jenny@jentlestay.com">jenny@jentlestay.com</a>.</p>
+
+    <h2>1. What Unsub does</h2>
+    <p>After you sign in with your email provider, Unsub lists the senders of promotional and mailing-list emails in your mailbox. You choose which senders to remove, and Unsub unsubscribes you from them where the sender supports it and moves their emails to your Trash folder. Nothing is removed unless you select it and press the Zap button.</p>
+
+    <h2>2. Information we access</h2>
+    <p>Currently Unsub supports Gmail. When you connect your Gmail account and approve access, we request one Google permission, <strong>gmail.modify</strong>. Google’s approval screen describes this permission broadly, but Unsub uses it only to:</p>
+    <ul>
+      <li><strong>Find mailing-list emails</strong> – emails in your Promotions and Updates categories that contain an unsubscribe link – and read their <em>sender name, sender address and subject line</em> so we can show them to you.</li>
+      <li><strong>Find unsubscribe links</strong> – we read the standard unsubscribe information senders include in their emails’ technical headers.</li>
+      <li><strong>Move emails to Trash</strong> – only emails from senders you choose. Emails in Trash stay recoverable in Gmail for 30 days.</li>
+    </ul>
+    <p>When you zap a sender that supports one-click unsubscribe, our server contacts that sender’s own unsubscribe link to tell them to stop emailing you. This does not send an email from your account, and we add no information about you beyond what the sender put in that link.</p>
+    <p>Unsub does not read the body or attachments of your emails, and does not send email on your behalf.</p>
+    <p>We also receive your email address from Google so we can show which account is connected.</p>
+
+    <h2>3. Information we store</h2>
+    <ul>
+      <li><strong>Access tokens.</strong> To act on your mailbox during your session, our server keeps the access credentials Google gives us in the server’s memory. They are not saved to a database and are discarded when the session ends (after at most 7 days) or when the server restarts.</li>
+      <li><strong>In your browser.</strong> A session identifier and your email address are saved in your browser’s local storage so you stay signed in. Pressing the <em>Reset</em> button removes them.</li>
+      <li><strong>Server logs.</strong> Our hosting logs may record operational events such as the email address that connected, and the number of senders and emails processed. We do not log the contents of your emails.</li>
+    </ul>
+
+    <h2>4. How we use information</h2>
+    <p>We use the information only to provide and improve Unsub’s features that you request: showing you promotional senders, moving the emails you select to Trash, and keeping you signed in. We do <strong>not</strong> sell your data, use it for advertising, or share it with third parties for their own purposes. We do not use email content to build profiles or train AI models.</p>
+
+    <div class="callout">
+      <p><strong>Google API Services User Data Policy.</strong> Unsub’s use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy#additional_requirements_for_specific_api_scopes" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
     </div>
 
-    <!-- VIEW 2: DAILY SWIPE -->
-    <div id="view-swipe-container" class="hidden deck-workspace">
-      <div id="provider-login-screen" style="width:100%; background:#ffffff; border:1px solid #e2e8f0; padding:20px; border-radius:20px; box-shadow:0 4px 6px rgba(0,0,0,0.02); text-align:center;">
-        <h3 style="font-size:16px; color:#1e293b; margin-bottom:10px;">🔌 One-Tap Secure Gateway</h3>
-        <p style="font-size:12px; color:#64748b; margin-bottom:15px; line-height:1.4;">Select your provider below. Authorized via in-app secure cloud handshake with zero password entry required.</p>
-        <div class="provider-grid">
-          <div class="provider-card" onclick="openSecureGateway('gmail', 'Google Mail')">🔴 Gmail</div>
-          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('yahoo', 'Yahoo Mail')">🟣 Yahoo <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
-          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('icloud', 'Apple iCloud')">☁️ iCloud <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
-          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('outlook', 'Microsoft Outlook')">🔵 Outlook <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
-          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('aol', 'AOL Mail')">📬 AOL <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
-          <div class="provider-card" style="opacity:0.55;" onclick="openSecureGateway('imap', 'Custom IMAP')">🔒 IMAP <span style="font-size:9px;font-weight:600;color:#94a3b8;margin-left:4px;">SOON</span></div>
-        </div>
-        <!-- IMAP SSL Dropdown Tray -->
-        <div id="imap-instructions-drawer" class="hidden" style="margin-top:15px; padding:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; text-align:left;">
-          <p style="font-size:11px; font-weight:700; color:#334155; margin-bottom:8px;">Custom IMAP SSL Configuration:</p>
-          <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input type="text" id="imap-host-input" placeholder="imap.server.com" style="flex:2; padding:8px; font-size:11px; border:1px solid #cbd5e1; border-radius:6px;">
-            <input type="text" id="imap-port-input" value="993" placeholder="Port" style="flex:1; padding:8px; font-size:11px; border:1px solid #cbd5e1; border-radius:6px;">
-          </div>
-          <button onclick="openCustomImapGateway()" style="width:100%; background:#2c3e50; color:#fff; border:none; padding:10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer;">Authorize IMAP Gateway</button>
-        </div>
-      </div>
+    <h2>5. Payments</h2>
+    <p>Subscriptions are processed by Stripe. Your card details are entered on Stripe’s secure pages and are never seen or stored by Unsub. To check whether your subscription is active, Unsub looks up your connected email address in our Stripe account, and your subscription is linked to that address. Stripe’s handling of your payment information is governed by <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe’s privacy policy</a>.</p>
 
-      <!-- Tinder Deck Interface -->
-      <div id="swipe-deck-interface" class="hidden" style="width:100%; display:flex; flex-direction:column; align-items:center; justify-content:space-between; flex:1;">
-        <div style="width:100%;">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:0 5px;">
-            <h2 style="font-weight:700; font-size:16px; color:#1e293b;">Daily Swipe</h2>
-            <span id="queue-counter" style="font-size:11px; background:#e0e7ff; color:#3730a3; font-weight:600; padding:4px 10px; border-radius:9999px;">0 in queue</span>
-          </div>
-          <div style="position:relative; width:100%; height:320px; display:flex; align-items:center; justify-content:center;">
-            <div id="swipe-card" style="position:absolute; width:100%; height:300px; background:#ffffff; border-radius:20px; box-shadow:0 8px 24px rgba(0,0,0,0.08); border:1px solid #e2e8f0; padding:20px; display:flex; flex-direction:column; justify-content:space-between; transition:0.3s ease;">
-              <div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                  <span id="sender-category" style="background:#e0e7ff; color:#3730a3; font-size:11px; padding:3px 8px; border-radius:6px; font-weight:600;">Promotions</span>
-                  <span id="swipe-badge" style="font-size:11px; font-weight:700; opacity:0; transition:opacity 0.2s;">ZAP</span>
-                </div>
-                <h3 id="sender-name" style="font-size:18px; font-weight:800; color:#1e293b;">Scanning Streams...</h3>
-                <p id="sender-email" style="font-size:12px; color:#64748b; margin-top:2px;">Please wait...</p>
-                <p id="sender-subject" style="font-size:13px; font-style:italic; color:#334155; margin-top:12px; background:#f8fafc; padding:10px; border-radius:8px; border-left:3px solid #cbd5e1;">"Analyzing incoming headers..."</p>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:10px; width:100%; padding:10px 0;">
-          <button onclick="triggerSwipe('right')" class="zap-button" style="background:linear-gradient(135deg, #ef4444, #dc2626); box-shadow:0 4px 12px rgba(239,68,68,0.3);">⚡ Zap & Unsub Sender</button>
-          <button onclick="triggerSwipe('left')" style="width:100%; background:#ffffff; border:2px solid #cbd5e1; color:#334155; padding:16px; border-radius:14px; font-size:16px; font-weight:700; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.02);">❤️ Keep This Sender</button>
-        </div>
-      </div>
-    </div>
+    <h2>6. Service providers</h2>
+    <p>Unsub is hosted on Render, which processes requests on our behalf. Stripe processes payments. These providers may handle data only as needed to run their services for us. We may also disclose information if required by law.</p>
 
-    <!-- VIEW 3: SECURE ACCESS (STRIPE) -->
-    <div id="view-pay-container" class="hidden pay-workspace">
-      <div class="premium-badge">AUTOMATED SCRUB</div>
-      <div class="price-hero">
-        <div class="price-amount">$1.99 per month</div>
-        <div class="price-subtitle">(Automated Mailbox Cleaning Included)</div>
-      </div>
-      <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:16px; text-align:center; box-shadow:0 4px 6px rgba(0,0,0,0.02); display:flex; flex-direction:column; gap:12px;">
-        <p style="font-size:12px; color:#475569; line-height:1.5; text-align:left;">Unlock continuous background scanning, automatic classification of commercial newsletter streams, and priority multi-provider cloud sync. Please note: Once active, it may take 48–72 hours for your mailbox to fully clear out unwanted promo emails as cached streams process. Also includes unlimited access to the mobile Tinder-style swipe-deck maintenance dashboard.</p>
-        <p id="paywall-status" style="font-size:12px; font-weight:700; color:#b45309; background:#fef3c7; border-radius:10px; padding:10px;">Step 1: Connect your Gmail on the "Daily Swipe" tab. Step 2: Subscribe here to unlock cleaning.</p>
-        <button id="subscribe-button" class="zap-button" style="background-color:#10b981; box-shadow:0 4px 15px rgba(16,185,129,0.3);" onclick="handlePaymentSubmit()">Subscribe Securely Via Stripe</button>
-        <button id="manage-button" class="hidden" onclick="openBillingPortal()" style="width:100%; background:#ffffff; border:2px solid #cbd5e1; color:#334155; padding:12px; border-radius:14px; font-size:14px; font-weight:700; cursor:pointer;">Manage or Cancel Subscription</button>
-      </div>
-      <div class="trust-banner">Billed automatically every 30 days. Cancel or manage your subscription anytime via your Jentlestay Unsubapp customer billing portal. Bank-grade 256-bit SSL encrypted checkout platform.</div>
-    </div>
-  </div>
+    <h2>7. Your choices and deleting your data</h2>
+    <ul>
+      <li><strong>Disconnect any time.</strong> Press <em>Reset</em> in the app, and revoke Unsub’s access in your Google Account at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</li>
+      <li><strong>Recover emails.</strong> Emails Unsub moved to Trash can be restored from your Gmail Trash folder within 30 days.</li>
+      <li><strong>Ask us to delete data.</strong> Email <a href="mailto:jenny@jentlestay.com">jenny@jentlestay.com</a> and we will delete any information we hold about you, other than records we must keep by law.</li>
+    </ul>
+
+    <h2>8. Security</h2>
+    <p>Connections to Unsub use HTTPS. Credentials are kept in server memory rather than in a database, and our secret keys are stored in protected environment settings. No method of transmission or storage is perfectly secure, so we cannot guarantee absolute security.</p>
+
+    <h2>9. Children</h2>
+    <p>Unsub is not intended for children under 13, and we do not knowingly collect information from them.</p>
+
+    <h2>10. Changes to this policy</h2>
+    <p>We may update this policy as Unsub changes, for example when we add support for more email providers. We will change the “Last updated” date above, and we will ask for your approval again where new permissions are needed.</p>
+
+    <h2>11. Contact</h2>
+    <p>Questions or requests: <a href="mailto:jenny@jentlestay.com">jenny@jentlestay.com</a></p>
+  </main>
+  <footer>
+    <a href="/terms.html">Terms of Service</a> &nbsp;·&nbsp; <a href="/">Back to Unsub</a>
+  </footer>
 </div>
-
-<!-- SECURE CLOUD GATEWAY MODAL OVERLAY -->
-<div id="gateway-modal-overlay" class="gateway-overlay hidden">
-  <div class="gateway-modal">
-    <h3 style="font-size:18px; color:#1e293b; margin-bottom:10px;">☁️ Secure Cloud Gateway</h3>
-    <p id="gateway-modal-text" style="font-size:13px; color:#64748b; margin-bottom:20px; line-height:1.4;">Connecting securely to your mail vault via encrypted token handshake.</p>
-    <div style="display:flex; gap:10px;">
-      <button onclick="closeSecureGateway()" style="flex:1; background:#f1f5f9; border:none; padding:12px; border-radius:10px; font-weight:700; color:#475569; cursor:pointer;">Cancel</button>
-      <button onclick="confirmSecureGateway()" style="flex:1; background:#10b981; color:#fff; border:none; padding:12px; border-radius:10px; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(16,185,129,0.3);">Approve Link</button>
-    </div>
-  </div>
-</div><script>
-let liveMessages = [];
-let swipeDeck = []; // one card per sender
-let currentIndex = 0;
-let userSessionToken = '';
-let userEmail = '';
-
-function updateTicker(t) { 
-    document.getElementById('app-ticker').innerText = '🤖 Log: ' + t; 
-}
-
-function switchView(t) {
-    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-    document.getElementById('view-list-container').classList.add('hidden');
-    document.getElementById('view-swipe-container').classList.add('hidden');
-    document.getElementById('view-pay-container').classList.add('hidden');
-    if(t === 'list') {
-        document.getElementById('tab-list').classList.add('active');
-        document.getElementById('view-list-container').classList.remove('hidden');
-    } else if(t === 'swipe') {
-        document.getElementById('tab-swipe').classList.add('active');
-        document.getElementById('view-swipe-container').classList.remove('hidden');
-    } else {
-        document.getElementById('tab-pay').classList.add('active');
-        document.getElementById('view-pay-container').classList.remove('hidden');
-    }
-}
-
-function toggleImapDrawer() {
-    const d = document.getElementById('imap-instructions-drawer');
-    d.classList.toggle('hidden');
-    updateTicker(d.classList.contains('hidden') ? 'Closed IMAP drawer.' : 'Opened Custom IMAP SSL settings tray.');
-}
-
-function openSecureGateway(provider, label) {
-    if (provider === 'gmail') {
-        // Go to Google sign-in in this same tab; Google sends them straight back here, connected.
-        updateTicker('Opening Gmail secure connection...');
-        window.location.href = '/auth/gmail';
-    } else {
-        alert(`${label} integration coming soon! Currently only Gmail is supported.`);
-    }
-}
-
-function openCustomImapGateway() {
-    alert('Custom IMAP integration coming soon! Please use Gmail for now.');
-}
-
-function closeSecureGateway() {
-    document.getElementById('gateway-modal-overlay').classList.add('hidden');
-}
-
-async function confirmSecureGateway() {
-    closeSecureGateway();
-}
-
-async function loadRealInboxData() {
-    try {
-        updateTicker('Scanning your recent emails for mailing lists... (this can take a few seconds)');
-        
-        const response = await fetch('/api/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: userSessionToken })
-        });
-        
-        const data = await response.json();
-
-        // PAYWALL: server says this account hasn't paid yet
-        if (response.status === 402 || data.needsPayment) {
-            showPaywall();
-            return false;
-        }
-        if (response.status === 503) {
-            updateTicker('Could not verify subscription. Please try again shortly.');
-            alert(data.message);
-            return false;
-        }
-        if (response.status === 401) {
-            alert('Your session expired. Please connect your Gmail again.');
-            handleLogout();
-            return false;
-        }
-
-        if (data.success) {
-            setPaidUI(true);
-            liveMessages = data.messages || [];
-            
-            if (liveMessages.length === 0) {
-                updateTicker('✨ Inbox is clean! No mailing-list emails found.');
-            } else {
-                const senderCount = new Set(liveMessages.map(m => m.email.toLowerCase())).size;
-                updateTicker(`Found ${senderCount} mailing-list senders (${liveMessages.length} emails).`);
-            }
-            
-            buildSwipeDeck();
-            currentIndex = 0;
-            renderDeck();
-            loadHistoryList();
-            return true;
-        } else {
-            updateTicker('Failed to load inbox. Please reconnect.');
-            alert('Failed to load your inbox. Please try connecting again.');
-            handleLogout();
-        }
-    } catch (err) {
-        console.error('Load Error:', err);
-        updateTicker('Connection error. Please try again.');
-        alert('Failed to load inbox. Please check your connection and try again.');
-    }
-}
-
-function loadHistoryList() {
-    const listEl = document.getElementById('ui-list');
-    document.getElementById('master-select-all-header').classList.remove('hidden');
-    listEl.innerHTML = '';
-    
-    if(liveMessages.length === 0) {
-        listEl.innerHTML = '<div class="loading-text">✨ Inbox is fully clean! No clutter found.</div>';
-        return;
-    }
-    
-    // One row per sender (zapping a sender clears all of their promos)
-    const bySender = new Map();
-    liveMessages.forEach((item) => {
-        const key = item.email.toLowerCase();
-        if (bySender.has(key)) { bySender.get(key).count++; }
-        else { bySender.set(key, { item: item, count: 1 }); }
-    });
-
-    bySender.forEach(({ item, count }) => {
-        const div = document.createElement('div');
-        div.className = 'sender-item selected';
-        div.setAttribute('data-email', item.email);
-        div.onclick = () => { div.classList.toggle('selected'); };
-        div.innerHTML = `
-            <div class="custom-checkbox"></div>
-            <div class="sender-details">
-                <div class="sender-name"></div>
-                <div class="sender-email"></div>
-            </div>
-            <div class="count-badge"></div>
-        `;
-        // textContent keeps email text from ever running as code
-        div.querySelector('.sender-name').textContent = item.name;
-        div.querySelector('.sender-email').textContent = item.email + ' — "' + item.subject + '"';
-        div.querySelector('.count-badge').textContent = count;
-        listEl.appendChild(div);
-    });
-}
-
-function toggleMasterSelectAll(masterRow) {
-    const isChecked = masterRow.classList.toggle('selected');
-    document.querySelectorAll('#ui-list .sender-item').forEach(row => {
-        if (isChecked) row.classList.add('selected');
-        else row.classList.remove('selected');
-    });
-    updateTicker(isChecked ? 'Selected all sender streams.' : 'Cleared selection slots.');
-}
-
-// Group emails so each sender appears once in Daily Swipe (newest email first)
-function buildSwipeDeck() {
-    const bySender = new Map();
-    liveMessages.forEach((item) => {
-        const key = item.email.toLowerCase();
-        if (bySender.has(key)) bySender.get(key).count++;
-        else bySender.set(key, { ...item, count: 1 });
-    });
-    swipeDeck = Array.from(bySender.values());
-}
-
-function renderDeck() {
-    if(currentIndex >= swipeDeck.length) {
-        document.getElementById('sender-name').innerText = "Inbox Zero Reached! 🎉";
-        document.getElementById('sender-email').innerText = "All mailing-list senders processed.";
-        document.getElementById('sender-subject').innerText = "You're completely caught up.";
-        document.getElementById('sender-category').innerText = "Completed";
-        document.getElementById('queue-counter').innerText = `0 in queue`;
-        return;
-    }
-    const currentCard = swipeDeck[currentIndex];
-    document.getElementById('sender-category').innerText = currentCard.category || 'Promotions';
-    document.getElementById('sender-name').innerText = currentCard.name;
-    document.getElementById('sender-email').innerText = currentCard.email +
-        (currentCard.count > 1 ? ` · ${currentCard.count} emails` : '');
-    document.getElementById('sender-subject').innerText = `"${currentCard.subject}"`;
-    document.getElementById('queue-counter').innerText = `${swipeDeck.length - currentIndex} in queue`;
-}
-
-function triggerSwipe(direction) {
-    if(currentIndex >= swipeDeck.length) return;
-
-    // Swipe right = Zap: actually send this sender to the server
-    if (direction === 'right') {
-        const senderToZap = swipeDeck[currentIndex].email;
-        fetch('/api/zap', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken },
-            body: JSON.stringify({ senders: [senderToZap] })
-        }).then(r => r.json()).then(d => {
-            if (d.needsPayment) { showPaywall(); return; }
-            updateTicker(d.success ? (`Zapped ${senderToZap} (${d.trashed} emails moved to Trash)`) : 'Zap failed. Please try again.');
-        }).catch(() => updateTicker('Zap error occurred.'));
-    }
-
-    const card = document.getElementById('swipe-card');
-    card.style.transform = direction === 'right' ? 'translateX(300px) rotate(20deg)' : 'translateX(-300px) rotate(-20deg)';
-    setTimeout(() => {
-        card.style.transition = 'none';
-        card.style.transform = 'translateX(0px) rotate(0deg)';
-        currentIndex++;
-        renderDeck();
-        setTimeout(() => { card.style.transition = '0.3s ease'; }, 50);
-    }, 250);
-}
-
-async function executeZap() {
-    const rows = document.querySelectorAll('#ui-list .sender-item.selected');
-    const emails = Array.from(rows).map(r => r.getAttribute('data-email'));
-    if (emails.length === 0) { 
-        alert("Please select at least one sender row to zap!"); 
-        return; 
-    }
-    
-    updateTicker(`Batch zapping ${emails.length} targets...`);
-    
-    try {
-        const response = await fetch('/api/zap', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'x-user-session': userSessionToken
-            },
-            body: JSON.stringify({ senders: emails })
-        });
-        
-        const data = await response.json();
-
-        if (data.needsPayment) { showPaywall(); return; }
-
-        if (data.success) {
-            alert(`🎉 Success! ${data.message || ('Zapped ' + emails.length + ' senders.')}`);
-            document.getElementById('ui-list').innerHTML = '<div class="loading-text">✨ All selected clutter purged successfully.</div>';
-            updateTicker(`Successfully zapped ${emails.length} senders.`);
-        } else {
-            alert('Failed to zap senders. Please try again.');
-            updateTicker('Zap failed. Please try again.');
-        }
-    } catch(e) {
-        console.error('Zap Error:', e);
-        alert('Failed to zap senders. Please try again.');
-        updateTicker('Zap error occurred.');
-    }
-}
-
-// ============================================
-// PAYWALL
-// ============================================
-
-function setPaidUI(paid) {
-    document.getElementById('subscribe-button').classList.toggle('hidden', paid);
-    document.getElementById('manage-button').classList.toggle('hidden', !paid);
-    document.getElementById('paywall-status').innerText = paid
-        ? `✅ Subscription active for ${userEmail}.`
-        : (userSessionToken
-            ? `🔒 Connected as ${userEmail}. Subscribe to unlock cleaning.`
-            : 'Step 1: Connect your Gmail on the "Daily Swipe" tab. Step 2: Subscribe here to unlock cleaning.');
-}
-
-function showPaywall() {
-    liveMessages = [];
-    swipeDeck = [];
-    currentIndex = 0;
-    document.getElementById('sender-name').innerText = '🔒 Subscription required';
-    document.getElementById('sender-email').innerText = 'Subscribe for $1.99/month to start cleaning.';
-    document.getElementById('sender-subject').innerText = 'Tap the "Secure Access" tab to subscribe.';
-    document.getElementById('queue-counter').innerText = 'Locked';
-    document.getElementById('master-select-all-header').classList.add('hidden');
-    document.getElementById('ui-list').innerHTML = '<div class="loading-text">🔒 Subscribe on the "Secure Access" tab to unlock cleaning.</div>';
-    setPaidUI(false);
-    updateTicker(`Connected as ${userEmail}. Subscription required to continue.`);
-    switchView('pay');
-}
-
-// Use a login that was saved by the Gmail popup (or another tab)
-async function adoptSession(sessionId) {
-    if (!sessionId || sessionId === userSessionToken) return !!userSessionToken;
-    try {
-        const response = await fetch(`/api/session/${encodeURIComponent(sessionId)}`);
-        const data = await response.json();
-        if (!data.valid) return false;
-        userSessionToken = sessionId;
-        userEmail = data.email;
-        localStorage.setItem('unsub_email', userEmail);
-        document.getElementById('provider-login-screen').classList.add('hidden');
-        document.getElementById('swipe-deck-interface').classList.remove('hidden');
-        updateTicker(`Connected as ${userEmail}! Loading inbox...`);
-        await loadRealInboxData();
-        return true;
-    } catch (e) {
-        return false;
-    }
-}
-
-// When the Gmail popup finishes, it saves the login; this window notices right away.
-window.addEventListener('storage', (event) => {
-    if (event.key === 'unsub_session' && event.newValue) adoptSession(event.newValue);
-});
-
-async function handlePaymentSubmit() {
-    if (!userSessionToken) {
-        // Maybe the popup connected but couldn't tell this window – check for its saved login
-        await adoptSession(localStorage.getItem('unsub_session'));
-    }
-    if (!userSessionToken) {
-        alert('First connect your Gmail on the "Daily Swipe" tab, so your subscription is linked to your account. Then come back here to subscribe.');
-        switchView('swipe');
-        return;
-    }
-    updateTicker('Opening secure Stripe checkout...');
-    try {
-        const response = await fetch('/api/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken }
-        });
-        const data = await response.json();
-        if (data.alreadyPaid) {
-            updateTicker('Subscription already active! Loading inbox...');
-            await loadRealInboxData();
-            switchView('swipe');
-        } else if (data.url) {
-            window.location.href = data.url; // same tab, so Stripe brings them right back
-        } else {
-            if (response.status === 401) handleLogout();
-            alert(data.message || 'Could not open checkout. Please try again.');
-        }
-    } catch (e) {
-        alert('Could not open checkout. Please check your connection and try again.');
-    }
-}
-
-async function openBillingPortal() {
-    try {
-        const response = await fetch('/api/billing-portal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken }
-        });
-        const data = await response.json();
-        if (data.url) window.location.href = data.url;
-        else alert(data.message || 'Could not open the billing portal.');
-    } catch (e) {
-        alert('Could not open the billing portal. Please try again.');
-    }
-}
-
-function handleLogout() {
-    localStorage.removeItem('unsub_session');
-    localStorage.removeItem('unsub_email');
-    userSessionToken = '';
-    userEmail = '';
-    liveMessages = [];
-    swipeDeck = [];
-    currentIndex = 0;
-    
-    // Show login screen again
-    document.getElementById('provider-login-screen').classList.remove('hidden');
-    document.getElementById('swipe-deck-interface').classList.add('hidden');
-    document.getElementById('ui-list').innerHTML = '<div class="loading-text">🔒 Connect your mailbox via \'Daily Swipe\' to load clutter streams.</div>';
-    document.getElementById('master-select-all-header').classList.add('hidden');
-    setPaidUI(false);
-
-    updateTicker('Disconnected. Please reconnect your mailbox.');
-    
-    // Switch to swipe tab
-    switchView('swipe');
-}
-
-// Check for existing session on page load
-window.addEventListener('DOMContentLoaded', async () => {
-    // Coming back from Stripe (or from the Gmail login on phones): ?session=...&checkout=...
-    const params = new URLSearchParams(window.location.search);
-    const urlSession = params.get('session');
-    const checkoutResult = params.get('checkout');
-    if (urlSession) {
-        localStorage.setItem('unsub_session', urlSession);
-        history.replaceState(null, '', '/'); // hide the session from the address bar
-    }
-
-    const savedSession = localStorage.getItem('unsub_session');
-
-    if (savedSession) {
-        updateTicker('Checking existing session...');
-
-        // Verify session is still valid
-        try {
-            const response = await fetch(`/api/session/${encodeURIComponent(savedSession)}`);
-            const data = await response.json();
-
-            if (data.valid) {
-                userSessionToken = savedSession;
-                userEmail = data.email;
-                localStorage.setItem('unsub_email', userEmail);
-
-                document.getElementById('provider-login-screen').classList.add('hidden');
-                document.getElementById('swipe-deck-interface').classList.remove('hidden');
-                switchView('swipe');
-
-                if (checkoutResult === 'success') {
-                    updateTicker('🎉 Payment received! Unlocking your inbox...');
-                    // Stripe can take a few seconds to activate a new subscription
-                    for (let attempt = 0; attempt < 4; attempt++) {
-                        if (await loadRealInboxData()) { switchView('swipe'); break; }
-                        if (attempt < 3) await new Promise(r => setTimeout(r, 2500));
-                    }
-                } else {
-                    if (checkoutResult === 'cancelled') updateTicker('Checkout cancelled.');
-                    else updateTicker(`Welcome back, ${userEmail}! Loading inbox...`);
-                    await loadRealInboxData();
-                }
-            } else {
-                localStorage.removeItem('unsub_session');
-                localStorage.removeItem('unsub_email');
-                updateTicker(checkoutResult === 'success'
-                    ? 'Payment received! Please connect your Gmail again to continue.'
-                    : 'Session expired. Please reconnect.');
-                switchView('swipe');
-            }
-        } catch (err) {
-            console.error('Session check failed:', err);
-            localStorage.removeItem('unsub_session');
-            localStorage.removeItem('unsub_email');
-            updateTicker('Please connect your mailbox.');
-        }
-    } else {
-        updateTicker('Ready. Please connect your mailbox to begin.');
-    }
-});
-</script>
 </body>
 </html>

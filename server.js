@@ -1,5 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
+const dns = require('dns').promises;
+const net = require('net');
 const { google } = require('googleapis');
 const session = require('express-session');
 const app = express();
@@ -203,6 +205,92 @@ setInterval(() => {
 }, 60 * 60 * 1000);
 
 // ============================================
+// ONE-CLICK UNSUBSCRIBE (the standard Gmail's own Unsubscribe button uses)
+// ============================================
+
+// Pull the https link out of a List-Unsubscribe header, e.g.
+// "<mailto:u@x.com>, <https://x.com/unsub?id=1>"  ->  "https://x.com/unsub?id=1"
+function getUnsubscribeUrl(listUnsubscribeHeader) {
+    const parts = String(listUnsubscribeHeader || '').match(/<[^>]+>/g) || [];
+    for (const part of parts) {
+        const url = part.slice(1, -1).trim();
+        if (/^https:\/\//i.test(url)) return url;
+    }
+    return null;
+}
+
+// True when the email supports one-click unsubscribe
+function supportsOneClick(headers) {
+    const get = (name) => (headers.find(h => h.name.toLowerCase() === name.toLowerCase()) || {}).value || '';
+    return !!getUnsubscribeUrl(get('List-Unsubscribe')) &&
+        /List-Unsubscribe\s*=\s*One-Click/i.test(get('List-Unsubscribe-Post'));
+}
+
+// SAFETY: never let an email's link make our server contact private/internal addresses
+function isPrivateAddress(ip) {
+    if (net.isIPv4(ip)) {
+        const [a, b] = ip.split('.').map(Number);
+        return a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) ||
+            (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
+            (a === 100 && b >= 64 && b <= 127) || a >= 224;
+    }
+    const v6 = ip.toLowerCase();
+    if (v6.startsWith('::ffff:')) return isPrivateAddress(v6.slice(7));
+    return v6 === '::' || v6 === '::1' || v6.startsWith('fc') || v6.startsWith('fd') || v6.startsWith('fe80');
+}
+
+async function isSafePublicUrl(rawUrl) {
+    let url;
+    try { url = new URL(rawUrl); } catch (e) { return false; }
+    if (url.protocol !== 'https:' || url.username || url.password) return false;
+    const host = url.hostname.replace(/^\[|\]$/g, '');
+    if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false;
+    if (net.isIP(host)) return !isPrivateAddress(host);
+    try {
+        const addresses = await dns.lookup(host, { all: true });
+        return addresses.length > 0 && addresses.every(a => !isPrivateAddress(a.address));
+    } catch (e) {
+        return false;
+    }
+}
+
+// Look at a sender's newest emails for a one-click link and use it.
+// Returns { supported, unsubscribed }
+async function unsubscribeFromSender(gmail, messageIds) {
+    for (const id of messageIds.slice(0, 5)) {
+        let headers;
+        try {
+            const msg = await gmail.users.messages.get({
+                userId: 'me', id, format: 'metadata',
+                metadataHeaders: ['List-Unsubscribe', 'List-Unsubscribe-Post']
+            });
+            headers = msg.data.payload.headers || [];
+        } catch (e) {
+            continue;
+        }
+        if (!supportsOneClick(headers)) continue;
+
+        const url = getUnsubscribeUrl(headers.find(h => h.name.toLowerCase() === 'list-unsubscribe').value);
+        if (!(await isSafePublicUrl(url))) return { supported: false, unsubscribed: false };
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Unsub/1.0 (+https://appunsub.com)' },
+                body: 'List-Unsubscribe=One-Click',
+                redirect: 'manual',              // don't follow redirects to unknown places
+                signal: AbortSignal.timeout(8000)
+            });
+            return { supported: true, unsubscribed: response.status < 400 };
+        } catch (e) {
+            console.error('Unsubscribe request failed:', e.message);
+            return { supported: true, unsubscribed: false };
+        }
+    }
+    return { supported: false, unsubscribed: false };
+}
+
+// ============================================
 // GMAIL OAUTH FLOW
 // ============================================
 
@@ -210,8 +298,9 @@ app.get('/auth/gmail', (req, res) => {
     const client = makeOAuthClient();
     const authUrl = client.generateAuthUrl({
         access_type: 'offline',
+        // gmail.modify alone covers reading sender/subject AND moving to Trash
+        // (Google requires the narrowest permission the app needs)
         scope: [
-            'https://www.googleapis.com/auth/gmail.readonly',
             'https://www.googleapis.com/auth/gmail.modify'
         ],
         prompt: 'consent'
@@ -415,7 +504,7 @@ app.post('/api/connect', async (req, res) => {
                         userId: 'me',
                         id: id,
                         format: 'metadata',
-                        metadataHeaders: ['From', 'Subject']
+                        metadataHeaders: ['From', 'Subject', 'List-Unsubscribe', 'List-Unsubscribe-Post']
                     });
 
                     const headers = details.data.payload.headers || [];
@@ -433,7 +522,8 @@ app.post('/api/connect', async (req, res) => {
                         name: senderName,
                         email: senderEmail,
                         subject: subject,
-                        category: labels.includes('CATEGORY_UPDATES') ? 'Updates' : 'Promotions'
+                        category: labels.includes('CATEGORY_UPDATES') ? 'Updates' : 'Promotions',
+                        oneClick: supportsOneClick(headers)
                     };
                 } catch (err) {
                     const code = err.code || (err.response && err.response.status);
@@ -517,14 +607,9 @@ app.post('/api/zap', async (req, res) => {
         client.setCredentials(userSession.tokens);
         const gmail = google.gmail({ version: 'v1', auth: client });
 
-        let trashed = 0;
-        let sendersProcessed = 0;
-
-        for (const sender of senders) {
-            // Only accept plain email addresses (blocks search-operator tricks)
-            if (typeof sender !== 'string' || !/^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+$/.test(sender)) continue;
-
-            // Find EVERY mailing-list email from this sender (not just the ones shown on screen)
+        // Zap one sender: unsubscribe (if they support one-click), then move their emails to Trash
+        const zapSender = async (sender) => {
+            // Find EVERY mailing-list email from this sender (newest first)
             const ids = [];
             let pageToken;
             do {
@@ -538,6 +623,8 @@ app.post('/api/zap', async (req, res) => {
                 pageToken = page.data.nextPageToken;
             } while (pageToken && ids.length < 5000);
 
+            const unsub = ids.length ? await unsubscribeFromSender(gmail, ids) : { supported: false, unsubscribed: false };
+
             // Move them to Trash (recoverable for 30 days), 1000 at a time
             for (let i = 0; i < ids.length; i += 1000) {
                 await gmail.users.messages.batchModify({
@@ -550,17 +637,30 @@ app.post('/api/zap', async (req, res) => {
                 });
             }
 
-            trashed += ids.length;
-            sendersProcessed++;
+            return { sender, trashed: ids.length, supported: unsub.supported, unsubscribed: unsub.unsubscribed };
+        };
+
+        // Only accept plain email addresses (blocks search-operator tricks)
+        const validSenders = senders.filter(s => typeof s === 'string' && /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+$/.test(s));
+
+        // 5 senders at a time keeps it quick without tripping Gmail's speed limits
+        const results = [];
+        for (let i = 0; i < validSenders.length; i += 5) {
+            results.push(...await Promise.all(validSenders.slice(i, i + 5).map(zapSender)));
         }
 
-        console.log(`⚡ Zapped ${sendersProcessed} senders (${trashed} emails moved to Trash) for ${userSession.email}`);
+        const trashed = results.reduce((sum, r) => sum + r.trashed, 0);
+        const unsubscribed = results.filter(r => r.unsubscribed).length;
+
+        console.log(`⚡ Zapped ${results.length} senders (${unsubscribed} unsubscribed, ${trashed} emails moved to Trash) for ${userSession.email}`);
 
         res.json({
             success: true,
-            count: sendersProcessed,
+            count: results.length,
             trashed: trashed,
-            message: `Moved ${trashed} emails from ${sendersProcessed} senders to Trash`
+            unsubscribed: unsubscribed,
+            results: results,
+            message: `Unsubscribed from ${unsubscribed} of ${results.length} senders and moved ${trashed} emails to Trash`
         });
     } catch (error) {
         console.error('Zap Error:', error);
