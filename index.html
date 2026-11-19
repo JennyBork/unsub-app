@@ -187,55 +187,9 @@ function toggleImapDrawer() {
 
 function openSecureGateway(provider, label) {
     if (provider === 'gmail') {
-        // Open Gmail OAuth popup
-        const width = 600;
-        const height = 700;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-        
-        const popup = window.open(
-            '/auth/gmail',
-            'Gmail OAuth',
-            `width=${width},height=${height},left=${left},top=${top}`
-        );
-
+        // Go to Google sign-in in this same tab; Google sends them straight back here, connected.
         updateTicker('Opening Gmail secure connection...');
-
-        // Listen for OAuth success message
-        const messageHandler = async (event) => {
-            // Only trust messages that come from our own site
-            if (event.origin !== window.location.origin || !event.data) return;
-            if (event.data.type === 'oauth_success') {
-                userSessionToken = event.data.sessionId;
-                userEmail = event.data.email;
-                localStorage.setItem('unsub_session', userSessionToken);
-                localStorage.setItem('unsub_email', userEmail);
-                
-                updateTicker(`Connected as ${userEmail}! Loading inbox...`);
-                
-                // Hide login screen, show swipe deck
-                document.getElementById('provider-login-screen').classList.add('hidden');
-                document.getElementById('swipe-deck-interface').classList.remove('hidden');
-                
-                // Load real inbox data
-                await loadRealInboxData();
-                
-                // Remove event listener
-                window.removeEventListener('message', messageHandler);
-            } else if (event.data.type === 'oauth_error') {
-                updateTicker('Connection failed. Please try again.');
-                alert('Failed to connect. Please try again.');
-                window.removeEventListener('message', messageHandler);
-            }
-        };
-        
-        window.addEventListener('message', messageHandler);
-        
-        // Check if popup was blocked
-        if (!popup || popup.closed || typeof popup.closed === 'undefined') {
-            alert('Popup blocked! Please allow popups for this site and try again.');
-            updateTicker('Popup blocked. Please allow popups.');
-        }
+        window.location.href = '/auth/gmail';
     } else {
         alert(`${label} integration coming soon! Currently only Gmail is supported.`);
     }

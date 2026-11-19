@@ -223,10 +223,8 @@ app.get('/auth/google/callback', async (req, res) => {
                 <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f7f6;">
                     <div style="text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                         <h2 style="color: #ef4444; margin-bottom: 10px;">❌ Authentication Failed</h2>
-                        <p style="color: #64748b;">No authorization code received.</p>
-                        <script>
-                            setTimeout(() => window.close(), 3000);
-                        </script>
+                        <p style="color: #64748b; margin-bottom: 20px;">Gmail access wasn't approved.</p>
+                        <a href="/" style="display:inline-block; background:#2c3e50; color:#fff; padding:12px 20px; border-radius:10px; text-decoration:none; font-weight:700;">Back to Unsub</a>
                     </div>
                 </body>
             </html>
@@ -321,33 +319,19 @@ app.get('/auth/google/callback', async (req, res) => {
                         </svg>
                         <h2>✅ Connected Successfully!</h2>
                         <p><strong>${escapeHtml(email)}</strong></p>
-                        <p>You can close this window now.</p>
+                        <p>Taking you back to Unsub...</p>
                     </div>
                     <script>
-                        // Save the login where the main app window can always see it.
-                        // (Google's sign-in pages often cut the popup off from the main
-                        // window, so window.opener alone is not reliable.)
+                        // Save the login in the browser so the app remembers it
                         try {
                             localStorage.setItem('unsub_session', ${jsValue(sessionId)});
                             localStorage.setItem('unsub_email', ${jsValue(email)});
                         } catch (e) { /* storage blocked – fall through to redirect */ }
 
-                        if (window.opener) {
-                            window.opener.postMessage({
-                                type: 'oauth_success',
-                                sessionId: ${jsValue(sessionId)},
-                                email: ${jsValue(email)},
-                                provider: 'gmail'
-                            }, window.location.origin);
-                            setTimeout(() => window.close(), 2000);
-                        } else {
-                            // Popup lost its link: close it (the main window picks up the login).
-                            // If this wasn't a popup (e.g. on a phone), go to the app instead.
-                            window.close();
-                            setTimeout(() => {
-                                window.location.href = '/?session=' + encodeURIComponent(${jsValue(sessionId)});
-                            }, 800);
-                        }
+                        // Go straight back to the app, now connected
+                        setTimeout(() => {
+                            window.location.replace('/?session=' + encodeURIComponent(${jsValue(sessionId)}));
+                        }, 1200);
                     </script>
                 </body>
             </html>
@@ -360,17 +344,8 @@ app.get('/auth/google/callback', async (req, res) => {
                     <div style="text-align: center; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
                         <h2 style="color: #ef4444; margin-bottom: 10px;">❌ Connection Failed</h2>
                         <p style="color: #64748b; margin-bottom: 20px;">${escapeHtml(error.message)}</p>
-                        <p style="color: #94a3b8; font-size: 12px;">Please try again.</p>
+                        <a href="/" style="display:inline-block; background:#2c3e50; color:#fff; padding:12px 20px; border-radius:10px; text-decoration:none; font-weight:700;">Back to Unsub</a>
                     </div>
-                    <script>
-                        if (window.opener) {
-                            window.opener.postMessage({
-                                type: 'oauth_error',
-                                error: ${jsValue(error.message)}
-                            }, window.location.origin);
-                            setTimeout(() => window.close(), 3000);
-                        }
-                    </script>
                 </body>
             </html>
         `);
