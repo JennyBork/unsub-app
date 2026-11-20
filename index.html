@@ -56,6 +56,7 @@ body { background-color: #f4f7f6; color: #222; display: flex; justify-content: c
   </div>
   
   <div class="live-feed-ticker" id="app-ticker">🤖 Status: System initialized. Zero-password onboarding active.</div>
+  <a id="trash-link" class="hidden" target="_blank" rel="noopener" style="display:block; background:#ecfdf5; color:#047857; font-size:12px; font-weight:700; padding:8px 16px; text-decoration:none; border-bottom:1px solid #d1fae5;">🔍 See them in your Gmail Trash →</a>
   
   <div class="workspace">
     <!-- VIEW 1: HISTORY CLEAN -->
@@ -417,6 +418,7 @@ function triggerSwipe(direction) {
             if (d.needsPayment) { showPaywall(); return; }
             if (!d.success) { updateTicker('Zap failed. Please try again.'); return; }
             const r = (d.results && d.results[0]) || {};
+            if (r.trashed > 0) showTrashLink([senderToZap]);
             updateTicker(r.unsubscribed
                 ? `Unsubscribed from ${senderToZap} and moved ${r.trashed} emails to Trash.`
                 : `${senderToZap} doesn't support automatic unsubscribe. Moved ${r.trashed || 0} emails to Trash.`);
@@ -460,6 +462,7 @@ async function executeZap() {
 
         if (data.success) {
             emails.forEach(e => markKept(e, false));
+            if (data.trashed > 0) showTrashLink(emails);
             const skipped = data.count - data.unsubscribed;
             alert(`🎉 Done! Unsubscribed from ${data.unsubscribed} of ${data.count} senders and moved ${data.trashed} emails to Trash.` +
                 (skipped > 0 ? `\n\n${skipped} sender${skipped === 1 ? " doesn't" : "s don't"} support automatic unsubscribe, so their emails were cleared from your inbox only.` : '') +
@@ -492,6 +495,7 @@ function setPaidUI(paid) {
 }
 
 function showPaywall() {
+    hideTrashLink();
     liveMessages = [];
     swipeDeck = [];
     currentIndex = 0;
@@ -577,11 +581,24 @@ async function openBillingPortal() {
     }
 }
 
+// After a zap: a link that opens Gmail already searched to those emails in Trash
+function showTrashLink(senders) {
+    const list = senders.slice(0, 20);
+    const query = 'in:trash from:' + (list.length === 1 ? list[0] : '(' + list.join(' OR ') + ')');
+    const link = document.getElementById('trash-link');
+    link.href = 'https://mail.google.com/mail/?authuser=' + encodeURIComponent(userEmail) + '#search/' + encodeURIComponent(query);
+    link.classList.remove('hidden');
+}
+function hideTrashLink() {
+    document.getElementById('trash-link').classList.add('hidden');
+}
+
 function handleLogout() {
     localStorage.removeItem('unsub_session');
     localStorage.removeItem('unsub_email');
     userSessionToken = '';
     userEmail = '';
+    hideTrashLink();
     liveMessages = [];
     swipeDeck = [];
     currentIndex = 0;
