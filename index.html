@@ -264,6 +264,41 @@ async function loadRealInboxData() {
     }
 }
 
+// ============================================
+// KEPT SENDERS (remembered on this device, per Gmail account)
+// ============================================
+function keptKey() { return 'unsub_kept_' + (userEmail || '').toLowerCase(); }
+function getKept() {
+    try { return new Set(JSON.parse(localStorage.getItem(keptKey()) || '[]')); }
+    catch (e) { return new Set(); }
+}
+function saveKept(set) {
+    try { localStorage.setItem(keptKey(), JSON.stringify(Array.from(set))); } catch (e) { /* storage blocked */ }
+}
+function markKept(email, isKept) {
+    const kept = getKept();
+    const key = email.toLowerCase();
+    if (isKept) kept.add(key); else kept.delete(key);
+    saveKept(kept);
+}
+// Take a zapped sender out of the History Clean list right away
+function removeHistoryRow(email) {
+    document.querySelectorAll('#ui-list .sender-item').forEach(row => {
+        if ((row.getAttribute('data-email') || '').toLowerCase() === email.toLowerCase()) row.remove();
+    });
+}
+// Show a sender as kept in the History Clean list (unticked + label)
+function showKeptInHistory(email) {
+    document.querySelectorAll('#ui-list .sender-item').forEach(row => {
+        if ((row.getAttribute('data-email') || '').toLowerCase() !== email.toLowerCase()) return;
+        row.classList.remove('selected');
+        row.setAttribute('data-kept', 'true');
+        const line = row.querySelector('.sender-email');
+        if (!line.textContent.startsWith('❤️ Kept')) line.textContent = '❤️ Kept · ' + line.textContent;
+        row.parentNode.appendChild(row); // move to the bottom
+    });
+}
+
 function loadHistoryList() {
     const listEl = document.getElementById('ui-list');
     document.getElementById('master-select-all-header').classList.remove('hidden');
@@ -286,10 +321,16 @@ function loadHistoryList() {
         }
     });
 
-    bySender.forEach(({ item, count, oneClick }) => {
+    const kept = getKept();
+    const rows = Array.from(bySender.values())
+        .map(r => ({ ...r, kept: kept.has(r.item.email.toLowerCase()) }))
+        .sort((a, b) => a.kept - b.kept); // kept senders go to the bottom
+
+    rows.forEach(({ item, count, oneClick, kept: isKept }) => {
         const div = document.createElement('div');
-        div.className = 'sender-item selected';
+        div.className = isKept ? 'sender-item' : 'sender-item selected';
         div.setAttribute('data-email', item.email);
+        if (isKept) div.setAttribute('data-kept', 'true');
         div.onclick = () => { div.classList.toggle('selected'); };
         div.innerHTML = `
             <div class="custom-checkbox"></div>
@@ -301,7 +342,7 @@ function loadHistoryList() {
         `;
         // textContent keeps email text from ever running as code
         div.querySelector('.sender-name').textContent = item.name;
-        div.querySelector('.sender-email').textContent = (oneClick ? '✓ Auto-unsubscribe · ' : '') + item.email + ' — "' + item.subject + '"';
+        div.querySelector('.sender-email').textContent = (isKept ? '❤️ Kept · ' : '') + (oneClick ? '✓ Auto-unsubscribe · ' : '') + item.email + ' — "' + item.subject + '"';
         div.querySelector('.count-badge').textContent = count;
         listEl.appendChild(div);
     });
@@ -310,10 +351,10 @@ function loadHistoryList() {
 function toggleMasterSelectAll(masterRow) {
     const isChecked = masterRow.classList.toggle('selected');
     document.querySelectorAll('#ui-list .sender-item').forEach(row => {
-        if (isChecked) row.classList.add('selected');
+        if (isChecked && row.getAttribute('data-kept') !== 'true') row.classList.add('selected');
         else row.classList.remove('selected');
     });
-    updateTicker(isChecked ? 'Selected all sender streams.' : 'Cleared selection slots.');
+    updateTicker(isChecked ? 'Selected all senders (except ones you kept).' : 'Cleared selection.');
 }
 
 // Group emails so each sender appears once in Daily Swipe (newest email first)
@@ -329,7 +370,8 @@ function buildSwipeDeck() {
             bySender.set(key, { ...item, count: 1 });
         }
     });
-    swipeDeck = Array.from(bySender.values());
+    const kept = getKept();
+    swipeDeck = Array.from(bySender.values()).filter(s => !kept.has(s.email.toLowerCase()));
 }
 
 function renderDeck() {
@@ -354,9 +396,19 @@ function renderDeck() {
 function triggerSwipe(direction) {
     if(currentIndex >= swipeDeck.length) return;
 
+    // Swipe left = Keep: remember it, so History Clean and Select All leave it alone
+    if (direction === 'left') {
+        const senderToKeep = swipeDeck[currentIndex].email;
+        markKept(senderToKeep, true);
+        showKeptInHistory(senderToKeep);
+        updateTicker(`Kept ${senderToKeep}. It won't be selected in History Clean.`);
+    }
+
     // Swipe right = Zap: actually send this sender to the server
     if (direction === 'right') {
         const senderToZap = swipeDeck[currentIndex].email;
+        markKept(senderToZap, false);
+        removeHistoryRow(senderToZap);
         fetch('/api/zap', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-user-session': userSessionToken },
@@ -407,6 +459,7 @@ async function executeZap() {
         if (data.needsPayment) { showPaywall(); return; }
 
         if (data.success) {
+            emails.forEach(e => markKept(e, false));
             const skipped = data.count - data.unsubscribed;
             alert(`🎉 Done! Unsubscribed from ${data.unsubscribed} of ${data.count} senders and moved ${data.trashed} emails to Trash.` +
                 (skipped > 0 ? `\n\n${skipped} sender${skipped === 1 ? " doesn't" : "s don't"} support automatic unsubscribe, so their emails were cleared from your inbox only.` : '') +
