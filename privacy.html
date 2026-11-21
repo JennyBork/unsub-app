@@ -27,54 +27,73 @@ footer { padding: 18px 32px; border-top: 1px solid #e2e8f0; font-size: 13px; col
 <div class="wrap">
   <header>
     <h1>🧼 Unsub – Privacy Policy</h1>
-    <p>Last updated: November 19, 2026</p>
+    <p>Last updated: November 21, 2026</p>
   </header>
   <main>
-    <p>Unsub (“Unsub,” “we,” “us”) is operated by Jennifer Borkowski, based in Illinois, USA. Unsub helps you clean promotional email out of your inbox. This policy explains what information the app accesses, how it is used, and the choices you have. You can reach us at <a href="mailto:jenny@jentlestay.com">jenny@jentlestay.com</a>.</p>
+    <p>Unsub (“Unsub,” “we,” “us”) is operated by Jennifer Borkowski, based in Illinois, USA. Unsub helps you unsubscribe from mailing lists and clean promotional email out of your inbox. This policy explains what information the app accesses, how it is used, and the choices you have. You can reach us at <a href="mailto:jenny@jentlestay.com">jenny@jentlestay.com</a>.</p>
 
     <h2>1. What Unsub does</h2>
     <p>After you sign in with your email provider, Unsub lists the senders of promotional and mailing-list emails in your mailbox. You choose which senders to remove, and Unsub unsubscribes you from them where the sender supports it and moves their emails to your Trash folder. Nothing is removed unless you select it and press the Zap button.</p>
 
-    <h2>2. Information we access</h2>
-    <p>Currently Unsub supports Gmail. When you connect your Gmail account and approve access, we request one Google permission, <strong>gmail.modify</strong>. Google’s approval screen describes this permission broadly, but Unsub uses it only to:</p>
+    <h2>2. Google user data we access</h2>
+    <p>Unsub currently supports Gmail. When you connect your Gmail account, we request one Google permission, <strong>gmail.modify</strong>. Google’s approval screen describes this permission broadly, but Unsub accesses only:</p>
     <ul>
-      <li><strong>Find mailing-list emails</strong> – emails in your Promotions and Updates categories that contain an unsubscribe link – and read their <em>sender name, sender address and subject line</em> so we can show them to you.</li>
-      <li><strong>Find unsubscribe links</strong> – we read the standard unsubscribe information senders include in their emails’ technical headers.</li>
-      <li><strong>Move emails to Trash</strong> – only emails from senders you choose. Emails in Trash stay recoverable in Gmail for 30 days.</li>
+      <li><strong>Your email address</strong>, so we can show which account is connected and match it to your subscription.</li>
+      <li><strong>Mailing-list email details</strong> – for emails in your Promotions and Updates categories that contain an unsubscribe link: the message ID, Gmail category, <em>sender name, sender address and subject line</em>.</li>
+      <li><strong>Unsubscribe information</strong> – the standard List-Unsubscribe and List-Unsubscribe-Post headers that senders include in those emails.</li>
+      <li><strong>Google access credentials</strong> (OAuth tokens) that let the app act on your mailbox while you use it.</li>
     </ul>
-    <p>When you zap a sender that supports one-click unsubscribe, our server contacts that sender’s own unsubscribe link to tell them to stop emailing you. This does not send an email from your account, and we add no information about you beyond what the sender put in that link.</p>
-    <p>Unsub does not read the body or attachments of your emails, and does not send email on your behalf.</p>
-    <p>We also receive your email address from Google so we can show which account is connected.</p>
+    <p>Unsub <strong>does not</strong> access the body or attachments of your emails, your contacts, or any email outside the mailing-list emails described above. The only aggregated data we keep is anonymous counts (for example, “14 emails moved to Trash”) in our server logs, with no email address or other personal information attached.</p>
 
-    <h2>3. Information we store</h2>
+    <h2>3. How we use Google user data</h2>
+    <p>We use Google user data only to provide the features you ask for:</p>
     <ul>
-      <li><strong>Access tokens.</strong> To act on your mailbox during your session, our server keeps the access credentials Google gives us in the server’s memory. They are not saved to a database and are discarded when the session ends (after at most 7 days) or when the server restarts.</li>
-      <li><strong>In your browser.</strong> A session identifier and your email address are saved in your browser’s local storage so you stay signed in. Pressing the <em>Reset</em> button removes them.</li>
-      <li><strong>Server logs.</strong> Our hosting logs may record operational events such as the email address that connected, and the number of senders and emails processed. We do not log the contents of your emails.</li>
+      <li><strong>Showing your mailing-list senders</strong> and how many emails each has sent you.</li>
+      <li><strong>Unsubscribing you</strong> – when you zap a sender, we use their unsubscribe information to send a one-click unsubscribe request to the sender’s own unsubscribe link.</li>
+      <li><strong>Moving emails to Trash</strong> – only emails from senders you choose. They stay recoverable in Gmail for 30 days. Unsub never permanently deletes email and never sends email from your account.</li>
+      <li><strong>Checking your subscription</strong> – we look up your connected email address in our Stripe account.</li>
     </ul>
+    <p>We do <strong>not</strong> use Google user data for advertising, to build profiles, for credit or lending decisions, or to develop, improve or train artificial intelligence or machine learning models. We do not let anyone read your data except as described here, as needed for security, or as required by law.</p>
 
-    <h2>4. How we use information</h2>
-    <p>We use the information only to provide and improve Unsub’s features that you request: showing you promotional senders, moving the emails you select to Trash, and keeping you signed in. We do <strong>not</strong> sell your data, use it for advertising, or share it with third parties for their own purposes. We do not use email content to build profiles or train AI models.</p>
+    <h2>4. How we share (transfer) Google user data</h2>
+    <p>We do not sell Google user data, and we never transfer it to advertisers, data brokers, information resellers or AI/ML services. Data is shared only with these types of parties, only as needed to run Unsub:</p>
+    <ul>
+      <li><strong>Our payment processor (Stripe)</strong> receives your connected email address so your subscription can be created and checked. Your card details go directly to Stripe and are never seen by Unsub. See <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe’s privacy policy</a>.</li>
+      <li><strong>Our hosting provider (Render)</strong> runs our server, which processes your data in memory on our behalf.</li>
+      <li><strong>The sender you unsubscribe from</strong> – when you zap a sender that supports one-click unsubscribe, our server contacts the unsubscribe link <em>that sender included in their own email</em>. We add no information about you beyond what the sender already put in that link.</li>
+      <li><strong>Legal requirements</strong> – we may disclose information if required by law.</li>
+    </ul>
 
     <div class="callout">
-      <p><strong>Google API Services User Data Policy.</strong> Unsub’s use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy#additional_requirements_for_specific_api_scopes" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+      <p><strong>Google API Services User Data Policy.</strong> Unsub’s use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy#additional_requirements_for_specific_api_scopes" target="_blank" rel="noopener">Google API Services User Data Policy</a>, including the Limited Use requirements. The use of raw or derived user data received from Google Workspace APIs will adhere to the Google User Data Policy, including the Limited Use requirements.</p>
     </div>
 
-    <h2>5. Payments</h2>
-    <p>Subscriptions are processed by Stripe. Your card details are entered on Stripe’s secure pages and are never seen or stored by Unsub. To check whether your subscription is active, Unsub looks up your connected email address in our Stripe account, and your subscription is linked to that address. Stripe’s handling of your payment information is governed by <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe’s privacy policy</a>.</p>
-
-    <h2>6. Service providers</h2>
-    <p>Unsub is hosted on Render, which processes requests on our behalf. Stripe processes payments. These providers may handle data only as needed to run their services for us. We may also disclose information if required by law.</p>
-
-    <h2>7. Your choices and deleting your data</h2>
+    <h2>5. How we protect Google user data</h2>
     <ul>
-      <li><strong>Disconnect any time.</strong> Press <em>Reset</em> in the app, and revoke Unsub’s access in your Google Account at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>.</li>
-      <li><strong>Recover emails.</strong> Emails Unsub moved to Trash can be restored from your Gmail Trash folder within 30 days.</li>
-      <li><strong>Ask us to delete data.</strong> Email <a href="mailto:jenny@jentlestay.com">jenny@jentlestay.com</a> and we will delete any information we hold about you, other than records we must keep by law.</li>
+      <li>All connections to Unsub use HTTPS encryption.</li>
+      <li>Google access credentials are kept only in our server’s memory. They are never written to a database or disk, and each person’s credentials are kept separate so one person’s login can never be used for another.</li>
+      <li>Our secret keys are stored in protected environment settings, not in our code.</li>
+      <li>Our server logs do not record your email address, sender details or any email content.</li>
+      <li>Unsubscribe requests are only sent to secure (https) public web addresses, never to private or internal ones.</li>
+      <li>Access to our systems is limited to the app’s operator.</li>
     </ul>
+    <p>No method of transmission or storage is perfectly secure, so we cannot guarantee absolute security.</p>
 
-    <h2>8. Security</h2>
-    <p>Connections to Unsub use HTTPS. Credentials are kept in server memory rather than in a database, and our secret keys are stored in protected environment settings. No method of transmission or storage is perfectly secure, so we cannot guarantee absolute security.</p>
+    <h2>6. Data retention and deletion</h2>
+    <ul>
+      <li><strong>Email details</strong> (senders, subjects, unsubscribe information) are read while the app is working and shown to you. We do not save them on our servers.</li>
+      <li><strong>Google access credentials</strong> are held in server memory only for your session and deleted when it ends (after at most 7 days), when you press <em>Reset</em>, or when our server restarts.</li>
+      <li><strong>In your browser</strong>, a session identifier, your email address and the list of senders you chose to keep are saved in local storage so the app remembers you. Pressing <em>Reset</em> removes your session and email address; clearing your browser data removes everything.</li>
+      <li><strong>Server logs</strong> contain only anonymous counts and no Google user data.</li>
+      <li><strong>Billing records</strong> (your email address and subscription history) are kept by Stripe for as long as needed for billing, tax and legal purposes.</li>
+    </ul>
+    <p><strong>To delete your data:</strong> press <em>Reset</em> in the app and revoke Unsub’s access in your Google Account at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>. Revoking access immediately stops Unsub from reaching your mailbox. To delete your billing record, email <a href="mailto:jenny@jentlestay.com">jenny@jentlestay.com</a> and we will delete what we hold about you within 30 days, other than records we must keep by law.</p>
+
+    <h2>7. Your emails stay recoverable</h2>
+    <p>Emails Unsub moves to Trash can be restored from your Gmail Trash folder within 30 days.</p>
+
+    <h2>8. Payments</h2>
+    <p>Subscriptions are processed by Stripe. Your card details are entered on Stripe’s secure pages and are never seen or stored by Unsub. Your subscription is linked to your connected email address.</p>
 
     <h2>9. Children</h2>
     <p>Unsub is not intended for children under 13, and we do not knowingly collect information from them.</p>

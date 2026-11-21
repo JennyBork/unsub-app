@@ -32,6 +32,20 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/00waEQeX27xscBscVTfAc04';
 
+// ACCESS CODES (set on Render → Environment as ACCESS_CODES, comma-separated)
+// Anyone who enters one in the app gets full access without paying – used for
+// Google's reviewers and complimentary access. Change or remove them anytime.
+const ACCESS_CODES = (process.env.ACCESS_CODES || '')
+    .split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+
+function accessCodeMatches(input) {
+    const given = Buffer.from(String(input || '').trim().toUpperCase());
+    return ACCESS_CODES.some(code => {
+        const real = Buffer.from(code);
+        return given.length === real.length && crypto.timingSafeEqual(given, real);
+    });
+}
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -182,6 +196,7 @@ async function isPaid(userSession) {
 
 // Sends the right "you must pay" or "couldn't check" reply. Returns true if the user may continue.
 async function requirePaid(userSession, res) {
+    if (userSession.compAccess) return true; // unlocked with an access code
     try {
         if (await isPaid(userSession)) return true;
         res.status(402).json({
@@ -351,7 +366,7 @@ app.get('/auth/google/callback', async (req, res) => {
             createdAt: Date.now()
         };
 
-        console.log(`✅ New Gmail connection: ${email}`);
+        console.log('✅ New Gmail connection');
 
         res.send(`
             <html>
@@ -440,7 +455,7 @@ app.get('/auth/google/callback', async (req, res) => {
             </html>
         `);
     } catch (error) {
-        console.error('OAuth Error:', error);
+        console.error('OAuth Error:', error.message);
         res.send(`
             <html>
                 <body style="font-family: system-ui; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f4f7f6;">
@@ -554,7 +569,7 @@ app.post('/api/connect', async (req, res) => {
             // Filter out any null results
             const validMessages = messages.filter(m => m !== null);
 
-            console.log(`📧 Loaded ${validMessages.length} mailing-list emails for ${userSession.email}`);
+            console.log(`📧 Loaded ${validMessages.length} mailing-list emails`);
 
             res.json({
                 success: true,
@@ -569,7 +584,7 @@ app.post('/api/connect', async (req, res) => {
             });
         }
     } catch (error) {
-        console.error('Fetch Error:', error);
+        console.error('Fetch Error:', error.message);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch emails: ' + error.message
@@ -661,7 +676,7 @@ app.post('/api/zap', async (req, res) => {
         const trashed = results.reduce((sum, r) => sum + r.trashed, 0);
         const unsubscribed = results.filter(r => r.unsubscribed).length;
 
-        console.log(`⚡ Zapped ${results.length} senders (${unsubscribed} unsubscribed, ${trashed} emails moved to Trash) for ${userSession.email}`);
+        console.log(`⚡ Zapped ${results.length} senders (${unsubscribed} unsubscribed, ${trashed} emails moved to Trash)`);
 
         res.json({
             success: true,
@@ -672,7 +687,7 @@ app.post('/api/zap', async (req, res) => {
             message: `Unsubscribed from ${unsubscribed} of ${results.length} senders and moved ${trashed} emails to Trash`
         });
     } catch (error) {
-        console.error('Zap Error:', error);
+        console.error('Zap Error:', error.message);
         res.status(500).json({
             success: false,
             message: 'Failed to process unsubscribe requests'
@@ -693,7 +708,7 @@ app.get('/api/session/:sessionId', (req, res) => {
             valid: true,
             email: found.email,
             provider: found.provider,
-            paid: !!found.paid
+            paid: !!(found.paid || found.compAccess)
         });
     } else {
         res.json({ valid: false });
@@ -712,7 +727,7 @@ app.post('/api/checkout', async (req, res) => {
     }
 
     try {
-        if (await isPaid(userSession)) {
+        if (userSession.compAccess || await isPaid(userSession)) {
             return res.json({ success: true, alreadyPaid: true });
         }
 
@@ -740,6 +755,31 @@ app.post('/api/checkout', async (req, res) => {
             url: `${STRIPE_PAYMENT_LINK}?locked_prefilled_email=${encodeURIComponent(userSession.email)}`
         });
     }
+});
+
+// ============================================
+// ACCESS CODE: unlock without paying (reviewers / complimentary access)
+// ============================================
+
+app.post('/api/redeem-code', (req, res) => {
+    const sessionId = req.headers['x-user-session'];
+    const userSession = sessionId && activeSessions[sessionId];
+    if (!userSession) {
+        return res.status(401).json({ success: false, message: 'Please connect your Gmail first.' });
+    }
+
+    // Limit guesses so codes can't be found by trial and error
+    userSession.codeAttempts = (userSession.codeAttempts || 0) + 1;
+    if (userSession.codeAttempts > 5) {
+        return res.status(429).json({ success: false, message: 'Too many attempts. Please reconnect Gmail and try again later.' });
+    }
+
+    if (ACCESS_CODES.length && accessCodeMatches(req.body && req.body.code)) {
+        userSession.compAccess = true;
+        console.log('🎟️ Access code redeemed');
+        return res.json({ success: true });
+    }
+    res.status(400).json({ success: false, message: "That code isn't valid. Please check it and try again." });
 });
 
 // ============================================
@@ -797,6 +837,7 @@ const server = app.listen(PORT, () => {
     console.log(`📧 Gmail OAuth: ${GMAIL_CLIENT_ID && GMAIL_CLIENT_SECRET ? 'Configured ✅' : 'Not configured ⚠️'}`);
     console.log(`📧 Azure OAuth: ${AZURE_CLIENT_ID ? 'Configured ✅' : 'Not configured ⚠️'}`);
     console.log(`💳 Stripe: ${STRIPE_SECRET_KEY ? 'Configured ✅' : 'NOT configured ⚠️ (set STRIPE_SECRET_KEY on Render – nobody can get in until you do)'}`);
+    console.log(`🎟️ Access codes: ${ACCESS_CODES.length ? ACCESS_CODES.length + ' set ✅' : 'none set'}`);
     console.log(`🔐 Session Secret: ${process.env.SESSION_SECRET ? 'Set ✅' : 'Using default ⚠️ (set SESSION_SECRET on Render)'}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 });
